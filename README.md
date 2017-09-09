@@ -30,11 +30,13 @@ $ yarn add react-native-input-scroll-view
 Very easy
 
 ```jsx
-import InputScrollView from 'InputScrollView';
+import InputScrollView from 'react-native-input-scroll-view';
 ...
 render() {
     return (
         <InputScrollView>
+            <TextInput/>
+            <TextInput/>
             <TextInput/>
       	</InputScrollView>
     );

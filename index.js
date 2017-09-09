@@ -9,7 +9,7 @@ import {
     ScrollView,
     Dimensions,
 } from 'react-native';
-import TextInputState from 'TextInputState';
+import TextInputState from 'react-native/Libraries/Components/TextInput/TextInputState';
 
 export default class extends Component {
     static propTypes = {
