@@ -47,17 +47,17 @@ render() {
 
 ## Props
 
-####props.lock
+#### props.lock
 
 Make the scrollview no longer follow the keyboard adjustment, default is `false`. Sometimes you might need it.
 
 To monitor multiline `TextInput`, the `ScrollView`'s `onContentSizeChange` event is used. But that brings with it a side effect, when the `ContentSize` of `ScrollView` changes is not due to multiline text input, and at the same time the keyboard is hidden, may result in a `ScrollView` error correction, set it to `true`, might solve the problem.
 
-####props.topOffset
+#### props.topOffset
 
 If you find out that the keyboard pops up, the top of the ScrollView shows that the location is not normal, you just need to set it to `navigatorHeight`.
 
-####props.bottomOffset
+#### props.bottomOffset
 
 If you find that the keyboard pops up, the bottom of the ScrollView is not normal, you just need to set it to `tabBarHeight`.
 
