@@ -1,0 +1,11 @@
+{
+  "name": "react-native-input-scroll-view",
+  "version": "1.0.0",
+  "description": "Perfect TextInput ScrollView",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Junjie.Bai",
+  "license": "MIT"
+}
