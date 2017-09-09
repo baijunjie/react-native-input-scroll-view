@@ -4,11 +4,7 @@
 
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import {
-    View,
-    ScrollView,
-    Dimensions,
-} from 'react-native';
+import { View, ScrollView, Dimensions } from 'react-native';
 import TextInputState from 'react-native/Libraries/Components/TextInput/TextInputState';
 
 export default class extends Component {
