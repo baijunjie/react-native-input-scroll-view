@@ -49,13 +49,19 @@ render() {
 
 #### props.topOffset
 
+`default: 0`
+
 If you find out that the keyboard pops up, the top of the ScrollView shows that the location is not normal, you just need to set it to `navigatorHeight`.
 
 #### props.bottomOffset
 
+`default: 0`
+
 If you find that the keyboard pops up, the bottom of the ScrollView is not normal, you just need to set it to `tabBarHeight`.
 
-#### props.enableAutoScroll
+#### props.disableAutoScroll
+
+`default: false`
 
 Make the scrollview no longer follow the keyboard adjustment, default is `false`. Sometimes you might need it.
 

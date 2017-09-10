@@ -11,13 +11,13 @@ export default class extends Component {
     static propTypes = {
         topOffset: PropTypes.number,
         bottomOffset: PropTypes.number,
-        enableAutoScroll: PropTypes.bool,
+        disableAutoScroll: PropTypes.bool,
     };
 
     static defaultProps = {
         topOffset: 0,
         bottomOffset: 0,
-        enableAutoScroll: true,
+        disableAutoScroll: false,
     };
 
     componentWillMount() {
@@ -42,8 +42,8 @@ export default class extends Component {
 
     _scrollToKeyboard = () => {
         // 当 ScrollView 的 ContentSize 不是因为多行文本输入而发生变化时，会导致这里错误的执行
-        // 因此使用 enableAutoScroll 来控制它是否自动滚动
-        if (!this.props.enableAutoScroll || !this._keyboardShow) return;
+        // 因此使用 disableAutoScroll 来控制它是否自动滚动
+        if (this.props.disableAutoScroll || !this._keyboardShow) return;
         const curFocusTarget = TextInputState.currentlyFocusedField();
         if (!curFocusTarget) return;
         const scrollView = this.refs.scrollView;
