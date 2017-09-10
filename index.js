@@ -79,9 +79,14 @@ export default class extends Component {
     };
 
     // 这个方法是为了防止 ScrollView 在滑动结束后触发 TextInput 的 focus 事件
-    _onStartShouldSetResponderCapture() {
-        return !TextInputState.currentlyFocusedField();
-    }
+    _onStartShouldSetResponderCapture = ({...event}) => {
+        if (event.target === TextInputState.currentlyFocusedField()) return false;
+        const uiViewClassName = event._targetInst.viewConfig.uiViewClassName;
+        if (uiViewClassName !== 'RCTTextField' && uiViewClassName !== 'RCTTextView') {
+            return false;
+        }
+        return true;
+    };
 
     _setScrollViewContentBottomInset(bottomInset) {
         const scrollView = this.refs.scrollView;
