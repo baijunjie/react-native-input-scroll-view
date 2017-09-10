@@ -9,15 +9,15 @@ import TextInputState from 'react-native/Libraries/Components/TextInput/TextInpu
 
 export default class extends Component {
     static propTypes = {
-        lock: PropTypes.bool,
         topOffset: PropTypes.number,
         bottomOffset: PropTypes.number,
+        enableAutoScroll: PropTypes.bool,
     };
 
     static defaultProps = {
-        lock: false,
         topOffset: 0,
         bottomOffset: 0,
+        enableAutoScroll: true,
     };
 
     componentWillMount() {
@@ -42,8 +42,8 @@ export default class extends Component {
 
     _scrollToKeyboard = () => {
         // 当 ScrollView 的 ContentSize 不是因为多行文本输入而发生变化时，会导致这里错误的执行
-        // 因此需要使用一个属性将其锁住
-        if (this.props.lock || !this._keyboardShow) return;
+        // 因此使用 enableAutoScroll 来控制它是否自动滚动
+        if (!this.props.enableAutoScroll || !this._keyboardShow) return;
         const curFocusTarget = TextInputState.currentlyFocusedField();
         if (!curFocusTarget) return;
         const scrollView = this.refs.scrollView;
