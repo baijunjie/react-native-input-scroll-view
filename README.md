@@ -66,8 +66,8 @@ If you find that the keyboard pops up, the bottom of the ScrollView is not norma
 ## ENV
 
 ```
-"react": "16.0.0-alpha.12"
-"react-native": "0.48.0-rc.1"
+"react": "^16.0.0-alpha.12"
+"react-native": "^0.48.0-rc.1"
 ```
 
 
