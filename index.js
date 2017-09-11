@@ -8,16 +8,18 @@ import { View, ScrollView, Keyboard, Dimensions, Animated } from 'react-native';
 import TextInputState from 'react-native/Libraries/Components/TextInput/TextInputState';
 import { getInstanceFromNode } from 'react-native/Libraries/Renderer/shims/ReactNativeComponentTree';
 
-const baseOffset = 80;
+const baseOffset = 40;
 
 export default class extends Component {
     static propTypes = {
+        topOffset: PropTypes.number,
         bottomOffset: PropTypes.number,
         keyboardOffset: PropTypes.number,
         getMultiLineInputHandles: PropTypes.func,
     };
 
     static defaultProps = {
+        topOffset: 0,
         bottomOffset: 0,
         keyboardOffset: 0,
         getMultiLineInputHandles: null,
@@ -29,16 +31,13 @@ export default class extends Component {
         this._scrollViewBottomOffset = new Animated.Value(0);
         this._contentBottomOffset = new Animated.Value(0);
 
-        this._keyboardShow = false;
+        this._keyboardTop = 0;
         this._inputInfoMap = {};
-
-        this._keyboardDidShowListener = null;
-        this._keyboardWillHideListener = null;
 
         this.props.getMultiLineInputHandles &&
         this.props.getMultiLineInputHandles({
             onSelectionChange: this._onSelectionChange,
-            onContentSizeChange: this._onContentSizeChange
+            onContentSizeChange: this._onContentSizeChange,
         });
 
         this._addListener();
@@ -54,65 +53,72 @@ export default class extends Component {
             bottomOffset,
             keyboardOffset,
             getMultiLineInputHandles,
-            style,
             children,
             ...otherProps
         } = this.props;
 
         return (
-            <Animated.ScrollView ref={r => this._root = r && r._component}
-                        style={[{ marginBottom: this._scrollViewBottomOffset }, style]}
-                        onFocusCapture={this._onFocus} {...otherProps}>
-                <Animated.View style={{ marginBottom: this._contentBottomOffset }}
-                      onStartShouldSetResponderCapture={this._onStartShouldSetResponderCapture}>
-                    {children}
-                </Animated.View>
-            </Animated.ScrollView>
+            <Animated.View style={{ flex: 1, marginBottom: this._scrollViewBottomOffset }}>
+                <ScrollView ref={r => this._root = r}
+                            onFocusCapture={this._onFocus} {...otherProps}>
+                    <Animated.View style={{ marginBottom: this._contentBottomOffset }}
+                                   onStartShouldSetResponderCapture={this._onStartShouldSetResponderCapture}>
+                        {children}
+                    </Animated.View>
+                </ScrollView>
+            </Animated.View>
         );
     }
 
-    _scrollToKeyboard = () => {
-        if (!this._keyboardShow) return;
+    _scrollToKeyboardRequire = () => {
+        if (!this._keyboardTop) return;
 
         const curFocusTarget = TextInputState.currentlyFocusedField();
         if (!curFocusTarget) return;
 
-        const curTargetInputInfo = this._inputInfoMap[curFocusTarget];
-        const cursorOffset = curTargetInputInfo && curTargetInputInfo.cursorOffset || 0;
-        const toKeyboardOffset = baseOffset + this.props.keyboardOffset - cursorOffset;
+        let cursorRelativeBottomOffset = 0;
+        const inputInfo = this._inputInfoMap[curFocusTarget];
 
-        this._root.scrollResponderScrollNativeHandleToKeyboard(curFocusTarget, toKeyboardOffset, true);
+        if (!inputInfo || !inputInfo.height || !inputInfo.cursorRelativeBottomOffset) {
+            return this._scrollToKeyboard(curFocusTarget, cursorRelativeBottomOffset);
+        }
+
+        const input = getInstanceFromNode(curFocusTarget);
+        input.measure((x, y, width, height, left, top) => {
+            const paddingBottom = (height - inputInfo.height) * .5;
+            const bottom = top + height;
+            cursorRelativeBottomOffset = inputInfo.cursorRelativeBottomOffset + paddingBottom;
+            const cursorPosition = bottom - cursorRelativeBottomOffset;
+
+            if (cursorPosition > this._keyboardTop - baseOffset) {
+                this._scrollToKeyboard(curFocusTarget, cursorRelativeBottomOffset);
+            }
+        });
     };
 
-    _onKeyboardDidShow = (event) => {
-        // 如果 _keyboardShow 为 true，则说明在 onFocus 事件已经处理过了，这里无需在进行处理
-        if (this._keyboardShow) return;
-        this._keyboardShow = true;
-
-        this._scrollToKeyboard();
-
-        const keyboardHeight = Dimensions.get('window').height - event.endCoordinates.screenY;
-
-        this._animate(this._scrollViewBottomOffset, keyboardHeight - this.props.bottomOffset);
-        this._animate(this._contentBottomOffset, this.props.keyboardOffset);
+    _scrollToKeyboard = (target, offset) => {
+        const toKeyboardOffset = baseOffset + this.props.topOffset + this.props.keyboardOffset - offset;
+        this._root.scrollResponderScrollNativeHandleToKeyboard(target, toKeyboardOffset, true);
     };
 
-    _onKeyboardWillHide = () => {
-        this._keyboardShow = false;
+    _onKeyboardShow = (event) => {
+        this._keyboardTop = event.endCoordinates.screenY;
+        const keyboardHeight = Math.max(0, Dimensions.get('window').height - this._keyboardTop);
+        this._scrollViewBottomOffset.setValue(keyboardHeight - this.props.bottomOffset);
+        this._contentBottomOffset.setValue(baseOffset + this.props.keyboardOffset);
 
+        // 确保 _scrollToKeyboardRequire 在 onSelectionChange 之后执行
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                this._scrollToKeyboardRequire();
+            });
+        });
+    };
+
+    _onKeyboardHide = () => {
+        this._keyboardTop = 0;
         this._animate(this._scrollViewBottomOffset, 0);
         this._animate(this._contentBottomOffset, 0);
-    };
-
-    _onFocus = ({nativeEvent:event}) => {
-        // 当 onStartShouldSetResponderCapture 返回 true 时
-        // 被激活的 TextInput 无法使用 Keyboard.dismiss() 来收起键盘
-        // TextInputState.currentlyFocusedField() 也无法获取当前焦点ID
-        // 原因可能是系统并未判定 TextInput 获取焦点，这可能是一个 bug
-        // 通常需要在 onStartShouldSetResponderCapture 返回 false 的情况下再点击一次 TextInput 才能恢复正常
-        // 所以这里手动再设置一次焦点
-        TextInputState.focusTextInput(event.target);
-        this._scrollToKeyboard();
     };
 
     // 这个方法是为了防止 ScrollView 在滑动结束后触发 TextInput 的 focus 事件
@@ -125,33 +131,59 @@ export default class extends Component {
         return true;
     };
 
+    // _onFocus 在 keyboardWillShow 之后触发，在 keyboardDidShow 之前触发
+    _onFocus = ({nativeEvent:event}) => {
+        // 当 onStartShouldSetResponderCapture 返回 true 时
+        // 被激活的 TextInput 无法使用 Keyboard.dismiss() 来收起键盘
+        // TextInputState.currentlyFocusedField() 也无法获取当前焦点ID
+        // 原因可能是系统并未判定 TextInput 获取焦点，这可能是一个 bug
+        // 通常需要在 onStartShouldSetResponderCapture 返回 false 的情况下再点击一次 TextInput 才能恢复正常
+        // 所以这里手动再设置一次焦点
+        TextInputState.focusTextInput(event.target);
+
+        // 确保 _scrollToKeyboardRequire 在 onSelectionChange 之后执行
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                this._scrollToKeyboardRequire();
+            });
+        });
+    };
+
+    // onSelectionChange 在 onFocus 之后，在 keyboardDidShow 之前触发
+    // onSelectionChange 在 onContentSizeChange 之前触发
     _onSelectionChange = ({nativeEvent:event}) => {
-        const inputInfo = this._inputInfoMap[event.target];
-        if (!inputInfo || !inputInfo.height) return;
+        // 使用异步使 onSelectionChange 在 onContentSizeChange 之后执行
+        setTimeout(() => {
+            const inputInfo = this._inputInfoMap[event.target];
+            if (!inputInfo || !inputInfo.height) return;
 
-        const text = getInstanceFromNode(event.target)._currentElement.props.value;
-        if (!text) return;
+            const text = getInstanceFromNode(event.target)._currentElement.props.value;
+            if (typeof text !== 'string') return;
 
-        const cursorPosition = event.selection.start;
-        inputInfo.cursorOffset = calcOffset(inputInfo.height, getLineCount(text), getLineCount(text.substr(0, cursorPosition)));
+            const cursorPosition = event.selection.end;
+            inputInfo.cursorRelativeBottomOffset = calcOffset(inputInfo.height, getLineCount(text), getLineCount(text.substr(0, cursorPosition)));
+        });
     };
 
     _onContentSizeChange = ({nativeEvent:event}) => {
         const inputInfo = this._inputInfoMap[event.target] = this._inputInfoMap[event.target] || {};
         inputInfo.height = event.contentSize.height;
-        this._scrollToKeyboard();
+        // 使用异步保证 scrollToKeyboardRequire 在 onSelectionChange 之后执行
+        setTimeout(() => {
+            this._scrollToKeyboardRequire();
+        });
     };
 
     _addListener() {
-        this._keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', this._onKeyboardDidShow);
-        this._keyboardWillHideListener = Keyboard.addListener('keyboardWillHide', this._onKeyboardWillHide);
+        this._keyboardShowListener = Keyboard.addListener('keyboardWillShow', this._onKeyboardShow);
+        this._keyboardHideListener = Keyboard.addListener('keyboardWillHide', this._onKeyboardHide);
     }
 
     _removeListener() {
-        this._keyboardDidShowListener && this._keyboardDidShowListener.remove();
-        this._keyboardWillHideListener && this._keyboardWillHideListener.remove();
-        this._keyboardDidShowListener = null;
-        this._keyboardWillHideListener = null;
+        this._keyboardShowListener && this._keyboardShowListener.remove();
+        this._keyboardHideListener && this._keyboardHideListener.remove();
+        this._keyboardShowListener = null;
+        this._keyboardHideListener = null;
     }
 
     _extendScrollViewFunc() {

@@ -37,9 +37,9 @@ import InputScrollView from 'react-native-input-scroll-view';
 render() {
     return (
         <InputScrollView>
-            <TextInput/>
-            <TextInput/>
-            <TextInput/>
+            <TextInput />
+            <TextInput />
+            <TextInput />
       	</InputScrollView>
     );
 }
@@ -60,13 +60,19 @@ constructor(props) {
 render() {
     return (
         <InputScrollView getMultiLineInputHandles={handles => this.setState({multiLineInputHandles: handles})}>
-            <TextInput/>
-            <TextInput/>
-            <TextInput {...this.state.multiLineInputHandles} multiline />
+            <TextInput />
+            <TextInput />
+            <TextInput />
+            <TextInput value={this.state.remarks}
+              onChangeText={text => this.setState({remarks: text})}
+              multiline
+              {...this.state.multiLineInputHandles} />
       	</InputScrollView>
     );
 }
 ```
+
+**Note that if the cursor is to be correctly adjusted to the top of the keyboard, you must bind `value` to `TextInput`.**
 
 
 
@@ -78,11 +84,17 @@ render() {
 
 When automatic adjustment, relative to the keyboard offset.
 
+#### props.topOffset
+
+`default: 0`
+
+If your `ScrollView` is at a distance from the top of the window, say a `navigatorHeight` distance, then set it to `navigatorHeight`.
+
 #### props.bottomOffset
 
 `default: 0`
 
-If you find that the keyboard pops up, the bottom of the `ScrollView` is not normal, you just need to set it to `tabBar` height.
+If your `ScrollView` is at a distance from the bottom of the window, say a `tabBarHeight` distance, then set it to `tabBarHeight`.
 
 #### props.getMultiLineInputHandles
 
