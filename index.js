@@ -193,8 +193,8 @@ export default class extends Component {
         ];
 
         funcArray.forEach(funcName => {
-            this[funcName] = () => {
-                this._root[funcName]();
+            this[funcName] = (...args) => {
+                this._root[funcName].apply(this._root, args);
             };
         });
     }
