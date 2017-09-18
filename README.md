@@ -80,7 +80,7 @@ render() {
 
 #### props.keyboardOffset
 
-`default: 0`
+`default: 40`
 
 When automatic adjustment, relative to the keyboard offset.
 

@@ -8,8 +8,6 @@ import { View, ScrollView, Keyboard, Dimensions, Animated } from 'react-native';
 import TextInputState from 'react-native/Libraries/Components/TextInput/TextInputState';
 import { getInstanceFromNode } from 'react-native/Libraries/Renderer/shims/ReactNativeComponentTree';
 
-const baseOffset = 40;
-
 export default class extends Component {
     static propTypes = {
         topOffset: PropTypes.number,
@@ -21,7 +19,7 @@ export default class extends Component {
     static defaultProps = {
         topOffset: 0,
         bottomOffset: 0,
-        keyboardOffset: 0,
+        keyboardOffset: 40,
         getMultiLineInputHandles: null,
     };
 
@@ -90,14 +88,14 @@ export default class extends Component {
             cursorRelativeBottomOffset = inputInfo.cursorRelativeBottomOffset + paddingBottom;
             const cursorPosition = bottom - cursorRelativeBottomOffset;
 
-            if (cursorPosition > this._keyboardTop - baseOffset) {
+            if (cursorPosition > this._keyboardTop - this.props.keyboardOffset) {
                 this._scrollToKeyboard(curFocusTarget, cursorRelativeBottomOffset);
             }
         });
     };
 
     _scrollToKeyboard = (target, offset) => {
-        const toKeyboardOffset = baseOffset + this.props.topOffset + this.props.keyboardOffset - offset;
+        const toKeyboardOffset = this.props.topOffset + this.props.keyboardOffset - offset;
         this._root.scrollResponderScrollNativeHandleToKeyboard(target, toKeyboardOffset, true);
     };
 
@@ -105,7 +103,7 @@ export default class extends Component {
         this._keyboardTop = event.endCoordinates.screenY;
         const keyboardHeight = Math.max(0, Dimensions.get('window').height - this._keyboardTop);
         this._scrollViewBottomOffset.setValue(keyboardHeight - this.props.bottomOffset);
-        this._contentBottomOffset.setValue(baseOffset + this.props.keyboardOffset);
+        this._contentBottomOffset.setValue(this.props.keyboardOffset);
 
         // 确保 _scrollToKeyboardRequire 在 onSelectionChange 之后执行
         requestAnimationFrame(() => {
