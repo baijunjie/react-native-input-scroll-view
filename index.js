@@ -76,18 +76,17 @@ export default class extends Component {
         const curFocusTarget = TextInputState.currentlyFocusedField();
         if (!curFocusTarget) return;
 
-        let cursorRelativeBottomOffset = 0;
         const inputInfo = this._inputInfoMap[curFocusTarget];
 
-        if (!inputInfo || !inputInfo.height || !inputInfo.cursorRelativeBottomOffset) {
-            return this._scrollToKeyboard(curFocusTarget, cursorRelativeBottomOffset);
+        if (!inputInfo || !inputInfo.height) {
+            return this._scrollToKeyboard(curFocusTarget, 0);
         }
 
         const input = getInstanceFromNode(curFocusTarget);
         input.measure((x, y, width, height, left, top) => {
             const paddingBottom = (height - inputInfo.height) * .5;
             const bottom = top + height;
-            cursorRelativeBottomOffset = inputInfo.cursorRelativeBottomOffset + paddingBottom;
+            const cursorRelativeBottomOffset = (inputInfo.cursorRelativeBottomOffset || 0) + paddingBottom;
             const cursorPosition = bottom - cursorRelativeBottomOffset;
 
             if (cursorPosition > this._keyboardTop - this.props.keyboardOffset) {
@@ -168,6 +167,7 @@ export default class extends Component {
     _onContentSizeChange = ({nativeEvent:event}) => {
         const inputInfo = this._inputInfoMap[event.target] = this._inputInfoMap[event.target] || {};
         inputInfo.height = event.contentSize.height;
+
         // 使用异步保证 scrollToKeyboardRequire 在 onSelectionChange 之后执行
         setTimeout(() => {
             this._scrollToKeyboardRequire();
