@@ -82,7 +82,7 @@ render() {
 
 `default: 40`
 
-When automatic adjustment, relative to the keyboard offset.
+When automatic adjustment, the cursor relative to the top of the keyboard offset.
 
 #### props.topOffset
 

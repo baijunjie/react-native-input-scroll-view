@@ -1,5 +1,7 @@
 /**
  * @providesModule InputScrollView
+ * @author Junjie.Bai
+ * @license MIT
  */
 
 import React, { Component } from 'react';
