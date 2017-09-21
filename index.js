@@ -31,7 +31,7 @@ export default class extends Component {
         this._scrollViewBottomOffset = new Animated.Value(0);
         this._contentBottomOffset = new Animated.Value(0);
 
-        this._keyboardTop = 0;
+        this._keyboardTop = null;
         this._inputInfoMap = {};
 
         this.props.getMultiLineInputHandles &&
@@ -70,7 +70,7 @@ export default class extends Component {
         );
     }
 
-    _scrollToKeyboardRequire = () => {
+    _scrollToKeyboardRequire = (force) => {
         if (!this._keyboardTop) return;
 
         const curFocusTarget = TextInputState.currentlyFocusedField();
@@ -89,7 +89,7 @@ export default class extends Component {
             const cursorRelativeBottomOffset = (inputInfo.cursorRelativeBottomOffset || 0) + paddingBottom;
             const cursorPosition = bottom - cursorRelativeBottomOffset;
 
-            if (cursorPosition > this._keyboardTop - this.props.keyboardOffset) {
+            if (force || cursorPosition > this._keyboardTop - this.props.keyboardOffset) {
                 this._scrollToKeyboard(curFocusTarget, cursorRelativeBottomOffset);
             }
         });
@@ -105,17 +105,10 @@ export default class extends Component {
         const keyboardHeight = Math.max(0, Dimensions.get('window').height - this._keyboardTop);
         this._scrollViewBottomOffset.setValue(keyboardHeight - this.props.bottomOffset);
         this._contentBottomOffset.setValue(this.props.keyboardOffset);
-
-        // 确保 _scrollToKeyboardRequire 在 onSelectionChange 之后执行
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                this._scrollToKeyboardRequire();
-            });
-        });
     };
 
     _onKeyboardHide = () => {
-        this._keyboardTop = 0;
+        this._keyboardTop = null;
         this._animate(this._scrollViewBottomOffset, 0);
         this._animate(this._contentBottomOffset, 0);
     };
@@ -170,7 +163,7 @@ export default class extends Component {
 
         // 使用异步保证 scrollToKeyboardRequire 在 onSelectionChange 之后执行
         setTimeout(() => {
-            this._scrollToKeyboardRequire();
+            this._scrollToKeyboardRequire(true);
         });
     };
 
