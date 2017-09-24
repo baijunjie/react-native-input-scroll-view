@@ -60,6 +60,7 @@ export default class extends Component {
         return (
             <Animated.View style={{ flex: 1, marginBottom: this._scrollViewBottomOffset }}>
                 <ScrollView ref={r => this._root = r}
+                            onMomentumScrollEnd={this._onMomentumScrollEnd}
                             onFocusCapture={this._onFocus} {...otherProps}>
                     <Animated.View style={{ marginBottom: this._contentBottomOffset }}
                                    onStartShouldSetResponderCapture={this._onStartShouldSetResponderCapture}>
@@ -69,6 +70,46 @@ export default class extends Component {
             </Animated.View>
         );
     }
+
+    _addListener() {
+        this._keyboardShowListener = Keyboard.addListener('keyboardWillShow', this._onKeyboardShow);
+        this._keyboardHideListener = Keyboard.addListener('keyboardWillHide', this._onKeyboardHide);
+    }
+
+    _removeListener() {
+        this._keyboardShowListener && this._keyboardShowListener.remove();
+        this._keyboardHideListener && this._keyboardHideListener.remove();
+        this._keyboardShowListener = null;
+        this._keyboardHideListener = null;
+    }
+
+    _extendScrollViewFunc() {
+        const funcArray = [
+            'scrollTo',
+            'scrollToEnd',
+        ];
+
+        funcArray.forEach(funcName => {
+            this[funcName] = (...args) => {
+                this._root[funcName](...args);
+            };
+        });
+    }
+
+    _animate(props, toValue) {
+        Animated.timing(props, { toValue, duration: 250 }).start();
+    }
+
+    _onMomentumScrollEnd = ({nativeEvent:event}) => {
+        if (!this._keyboardTop) return;
+        const contentBottomOffset = Math.max(
+            0,
+            event.layoutMeasurement.height + // layoutMeasurement 可视区域的大小
+            event.contentOffset.y -
+            event.contentSize.height
+        );
+        this._contentBottomOffset.setValue(this._contentBottomOffset._value + contentBottomOffset);
+    };
 
     _scrollToKeyboardRequire = (force) => {
         if (!this._keyboardTop) return;
@@ -104,7 +145,6 @@ export default class extends Component {
         this._keyboardTop = event.endCoordinates.screenY;
         const keyboardHeight = Math.max(0, Dimensions.get('window').height - this._keyboardTop);
         this._scrollViewBottomOffset.setValue(keyboardHeight - this.props.bottomOffset);
-        this._contentBottomOffset.setValue(this.props.keyboardOffset);
     };
 
     _onKeyboardHide = () => {
@@ -166,35 +206,6 @@ export default class extends Component {
             this._scrollToKeyboardRequire(true);
         });
     };
-
-    _addListener() {
-        this._keyboardShowListener = Keyboard.addListener('keyboardWillShow', this._onKeyboardShow);
-        this._keyboardHideListener = Keyboard.addListener('keyboardWillHide', this._onKeyboardHide);
-    }
-
-    _removeListener() {
-        this._keyboardShowListener && this._keyboardShowListener.remove();
-        this._keyboardHideListener && this._keyboardHideListener.remove();
-        this._keyboardShowListener = null;
-        this._keyboardHideListener = null;
-    }
-
-    _extendScrollViewFunc() {
-        const funcArray = [
-            'scrollTo',
-            'scrollToEnd',
-        ];
-
-        funcArray.forEach(funcName => {
-            this[funcName] = (...args) => {
-                this._root[funcName](...args);
-            };
-        });
-    }
-
-    _animate(props, toValue) {
-        Animated.timing(props, { toValue, duration: 250 }).start();
-    }
 }
 
 function calcOffset(height, totalLine, curLine) {
