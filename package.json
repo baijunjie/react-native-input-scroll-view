@@ -1,6 +1,6 @@
 {
   "name": "react-native-input-scroll-view",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "description": "Perfect TextInput ScrollView",
   "main": "index.js",
   "scripts": {
