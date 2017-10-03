@@ -156,11 +156,20 @@ export default class extends Component {
     // 这个方法是为了防止 ScrollView 在滑动结束后触发 TextInput 的 focus 事件
     _onStartShouldSetResponderCapture = ({...event}) => {
         if (event.target === TextInputState.currentlyFocusedField()) return false;
-        const uiViewClassName = event._targetInst.viewConfig.uiViewClassName;
-        if (uiViewClassName !== 'RCTTextField' && uiViewClassName !== 'RCTTextView') {
-            return false;
+        let uiViewClassName 
+        if (Platform.OS === 'ios'){
+            uiViewClassName = event._targetInst.viewConfig.uiViewClassName;
+            if (uiViewClassName !== 'RCTTextField' && uiViewClassName !== 'RCTTextView') {
+                return false;
+            }
         }
-        return true;
+        else {
+            uiViewClassName = event._targetInst._currentElement
+            if (typeof uiViewClassName !== 'String' || uiViewClassName.type.displayName !== 'AndroidTextInput') {
+                return false;
+            }
+        }
+	return true;
     };
 
     // _onFocus 在 keyboardWillShow 之后触发，在 keyboardDidShow 之前触发
