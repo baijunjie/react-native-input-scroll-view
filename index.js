@@ -6,7 +6,7 @@
 
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import { View, ScrollView, Keyboard, Dimensions, Animated } from 'react-native';
+import { View, ScrollView, Keyboard, Platform, Dimensions, Animated } from 'react-native';
 import TextInputState from 'react-native/Libraries/Components/TextInput/TextInputState';
 import { getInstanceFromNode } from 'react-native/Libraries/Renderer/shims/ReactNativeComponentTree';
 
@@ -156,9 +156,16 @@ export default class extends Component {
     // 这个方法是为了防止 ScrollView 在滑动结束后触发 TextInput 的 focus 事件
     _onStartShouldSetResponderCapture = ({...event}) => {
         if (event.target === TextInputState.currentlyFocusedField()) return false;
-        const uiViewClassName = event._targetInst.viewConfig.uiViewClassName;
-        return uiViewClassName === 'RCTTextField' || uiViewClassName === 'RCTTextView';
-    };
+
+        let uiViewClassName;
+        if (Platform.OS === 'ios') {
+            uiViewClassName = event._targetInst.viewConfig.uiViewClassName;
+            return uiViewClassName === 'RCTTextField' || uiViewClassName === 'RCTTextView';
+        } else {
+            uiViewClassName = event._targetInst._currentElement.type.displayName;
+            return uiViewClassName === 'AndroidTextInput';
+        }
+    }
 
     // _onFocus 在 keyboardWillShow 之后触发，在 keyboardDidShow 之前触发
     _onFocus = ({nativeEvent:event}) => {
