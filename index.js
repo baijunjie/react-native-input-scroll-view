@@ -111,7 +111,7 @@ export default class extends Component {
         this._contentBottomOffset.setValue(this._contentBottomOffset._value + contentBottomOffset);
     };
 
-    _scrollToKeyboardRequire = (force) => {
+    _scrollToKeyboardRequest = (force) => {
         if (!this._keyboardTop) return;
 
         const curFocusTarget = TextInputState.currentlyFocusedField();
@@ -157,10 +157,7 @@ export default class extends Component {
     _onStartShouldSetResponderCapture = ({...event}) => {
         if (event.target === TextInputState.currentlyFocusedField()) return false;
         const uiViewClassName = event._targetInst.viewConfig.uiViewClassName;
-        if (uiViewClassName !== 'RCTTextField' && uiViewClassName !== 'RCTTextView') {
-            return false;
-        }
-        return true;
+        return uiViewClassName === 'RCTTextField' || uiViewClassName === 'RCTTextView';
     };
 
     // _onFocus 在 keyboardWillShow 之后触发，在 keyboardDidShow 之前触发
@@ -173,10 +170,10 @@ export default class extends Component {
         // 所以这里手动再设置一次焦点
         TextInputState.focusTextInput(event.target);
 
-        // 确保 _scrollToKeyboardRequire 在 onSelectionChange 之后执行
+        // 确保 _scrollToKeyboardRequest 在 onSelectionChange 之后执行
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                this._scrollToKeyboardRequire();
+                this._scrollToKeyboardRequest();
             });
         });
     };
@@ -201,9 +198,9 @@ export default class extends Component {
         const inputInfo = this._inputInfoMap[event.target] = this._inputInfoMap[event.target] || {};
         inputInfo.height = event.contentSize.height;
 
-        // 使用异步保证 scrollToKeyboardRequire 在 onSelectionChange 之后执行
+        // 使用异步保证 scrollToKeyboardRequest 在 onSelectionChange 之后执行
         setTimeout(() => {
-            this._scrollToKeyboardRequire(true);
+            this._scrollToKeyboardRequest(true);
         });
     };
 }
