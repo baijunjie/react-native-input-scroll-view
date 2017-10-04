@@ -108,7 +108,7 @@ If I set it to a function, this function returns an object, this object contains
 
 ```
 "react": "^16.0.0-alpha.12"
-"react-native": "^0.48.0-rc.1"
+"react-native": ">=0.46.0"
 ```
 
 
