@@ -63,7 +63,7 @@ export default class extends Component {
                             onMomentumScrollEnd={this._onMomentumScrollEnd}
                             onFocusCapture={this._onFocus} {...otherProps}>
                     <Animated.View style={{ marginBottom: this._contentBottomOffset }}
-                                   onStartShouldSetResponderCapture={this._onStartShouldSetResponderCapture}>
+                                   onMoveShouldSetPanResponderCapture={this._onMoveShouldSetPanResponderCapture}>
                         {children}
                     </Animated.View>
                 </ScrollView>
@@ -154,7 +154,7 @@ export default class extends Component {
     };
 
     // 这个方法是为了防止 ScrollView 在滑动结束后触发 TextInput 的 focus 事件
-    _onStartShouldSetResponderCapture = ({...event}) => {
+    _onMoveShouldSetPanResponderCapture = ({...event}) => {
         if (event.target === TextInputState.currentlyFocusedField()) return false;
 
         let uiViewClassName;
