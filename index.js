@@ -27,6 +27,7 @@ export default class extends Component {
 
     componentWillMount() {
         this._root = null;
+        this._moved = false;
 
         this._scrollViewBottomOffset = new Animated.Value(0);
         this._contentBottomOffset = new Animated.Value(0);
@@ -63,7 +64,9 @@ export default class extends Component {
                             onMomentumScrollEnd={this._onMomentumScrollEnd}
                             onFocusCapture={this._onFocus} {...otherProps}>
                     <Animated.View style={{ marginBottom: this._contentBottomOffset }}
-                                   onStartShouldSetResponderCapture={this._onStartShouldSetResponderCapture}>
+                                   onStartShouldSetResponderCapture={this._onTouchStart}
+                                   onResponderMove={this._onTouchMove}
+                                   onResponderRelease={this._onTouchEnd}>
                         {children}
                     </Animated.View>
                 </ScrollView>
@@ -154,7 +157,7 @@ export default class extends Component {
     };
 
     // 这个方法是为了防止 ScrollView 在滑动结束后触发 TextInput 的 focus 事件
-    _onStartShouldSetResponderCapture = ({...event}) => {
+    _onTouchStart = ({...event}) => {
         if (event.target === TextInputState.currentlyFocusedField()) return false;
 
         let uiViewClassName;
@@ -166,7 +169,19 @@ export default class extends Component {
                                 event._targetInst._currentElement.type.displayName;
             return uiViewClassName === 'AndroidTextInput';
         }
-    }
+    };
+
+    _onTouchMove = ({...event}) => {
+        this._moved = true;
+    };
+
+    _onTouchEnd = ({...event}) => {
+        if (this._moved) {
+            this._moved = false;
+        } else {
+            TextInputState.focusTextInput(event.target);
+        }
+    };
 
     // _onFocus 在 keyboardWillShow 之后触发，在 keyboardDidShow 之前触发
     _onFocus = ({nativeEvent:event}) => {
