@@ -15,7 +15,6 @@ import {
     Keyboard,
     Platform,
     Dimensions,
-    Animated,
 } from 'react-native';
 import TextInputState from 'react-native/Libraries/Components/TextInput/TextInputState';
 import { getInstanceFromNode } from 'react-native/Libraries/Renderer/shims/ReactNativeComponentTree';
@@ -42,6 +41,7 @@ export default class extends Component {
     state = {
         measureInputValue: '',
         measureInputWidth: 0,
+        contentBottomOffset: 0,
     };
 
     componentWillMount() {
@@ -50,7 +50,6 @@ export default class extends Component {
         this._measureCallback = null;
         this._keyboardTop = null;
         this._inputInfoMap = {};
-        this._contentBottomOffset = new Animated.Value(0);
 
         this.props.getMultilineInputHandles &&
         this.props.getMultilineInputHandles({
@@ -79,6 +78,7 @@ export default class extends Component {
         const {
             measureInputValue,
             measureInputWidth,
+            contentBottomOffset,
         } = this.state;
 
         return (
@@ -87,10 +87,10 @@ export default class extends Component {
                     <ScrollView ref={r => this._root = r}
                                 onMomentumScrollEnd={this._onMomentumScrollEnd}
                                 onFocusCapture={this._onFocus} {...otherProps}>
-                        <Animated.View style={{ marginBottom: this._contentBottomOffset }}
-                                       onStartShouldSetResponderCapture={this._onTouchStart}
-                                       onResponderMove={this._onTouchMove}
-                                       onResponderRelease={this._onTouchEnd}>
+                        <View style={{ marginBottom: contentBottomOffset }}
+                              onStartShouldSetResponderCapture={this._onTouchStart}
+                              onResponderMove={this._onTouchMove}
+                              onResponderRelease={this._onTouchEnd}>
                             {children}
                             <View style={styles.hidden}
                                   pointerEvents="none">
@@ -100,7 +100,7 @@ export default class extends Component {
                                            editable={false}
                                            multiline />
                             </View>
-                        </Animated.View>
+                        </View>
                     </ScrollView>
                 </View>
             </KeyboardAvoidingView>
@@ -162,12 +162,12 @@ export default class extends Component {
         if (!this._keyboardTop) return;
         const contentBottomOffset = Math.max(
             0,
-            this._contentBottomOffset._value +
+            this.state.contentBottomOffset +
             event.layoutMeasurement.height + // layoutMeasurement 可视区域的大小
             event.contentOffset.y -
             event.contentSize.height
         );
-        this._contentBottomOffset.setValue(contentBottomOffset);
+        this.setState({ contentBottomOffset });
     };
 
     _scrollToKeyboardRequest = (force) => {
@@ -207,7 +207,7 @@ export default class extends Component {
 
     _onKeyboardHide = () => {
         this._keyboardTop = null;
-        this._animate(this._contentBottomOffset, 0);
+        this.setState({ contentBottomOffset: 0 });
     };
 
     // 这个方法是为了防止 ScrollView 在滑动结束后触发 TextInput 的 focus 事件
