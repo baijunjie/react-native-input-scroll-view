@@ -39,6 +39,7 @@ export default class extends Component {
     };
 
     state = {
+        measureInputVisible: false,
         measureInputValue: '',
         measureInputWidth: 0,
         contentBottomOffset: 0,
@@ -76,6 +77,7 @@ export default class extends Component {
         } = this.props;
 
         const {
+            measureInputVisible,
             measureInputValue,
             measureInputWidth,
             contentBottomOffset,
@@ -94,11 +96,15 @@ export default class extends Component {
                             {children}
                             <View style={styles.hidden}
                                   pointerEvents="none">
-                                <TextInput style={[multilineInputStyle, { width: measureInputWidth }]}
-                                           value={measureInputValue}
-                                           onContentSizeChange={this._onContentSizeChangeMeasureInput}
-                                           editable={false}
-                                           multiline />
+                                {
+                                    measureInputVisible &&
+                                    <TextInput style={[multilineInputStyle, { width: measureInputWidth }]}
+                                               value={measureInputValue}
+                                               onContentSizeChange={this._onContentSizeChangeMeasureInput}
+                                               editable={false}
+                                               multiline />
+                                }
+
                             </View>
                         </View>
                     </ScrollView>
@@ -143,20 +149,20 @@ export default class extends Component {
     _measureCursorPosition(text, width, callback) {
         this._measureCallback = callback;
         this.setState({
+            measureInputVisible: true,
             measureInputValue: text,
             measureInputWidth: width,
         });
     }
 
-    _onContentSizeChangeMeasureInput = debounce(event => {
+    _onContentSizeChangeMeasureInput = ({nativeEvent:event}) => {
         if (!this._measureCallback) return;
         this._measureCallback(event.contentSize.height);
         this._measureCallback = null;
         this.setState({
-            measureInputValue: '',
-            measureInputWidth: 0,
+            measureInputVisible: false,
         });
-    });
+    };
 
     _onMomentumScrollEnd = ({nativeEvent:event}) => {
         if (!this._keyboardTop) return;
