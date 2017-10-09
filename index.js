@@ -34,7 +34,7 @@ export default class extends Component {
 
     static defaultProps = {
         topOffset: 0,
-        keyboardOffset: 20,
+        keyboardOffset: 40,
         getMultilineInputHandles: null,
         multilineInputStyle: { fontSize: 17 },
     };
@@ -162,11 +162,12 @@ export default class extends Component {
         if (!this._keyboardTop) return;
         const contentBottomOffset = Math.max(
             0,
+            this._contentBottomOffset._value +
             event.layoutMeasurement.height + // layoutMeasurement 可视区域的大小
             event.contentOffset.y -
             event.contentSize.height
         );
-        this._contentBottomOffset.setValue(this._contentBottomOffset._value + contentBottomOffset);
+        this._contentBottomOffset.setValue(contentBottomOffset);
     };
 
     _scrollToKeyboardRequest = (force) => {
