@@ -6,37 +6,54 @@
 
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import { View, ScrollView, Keyboard, Platform, Dimensions, Animated } from 'react-native';
+import {
+    StyleSheet,
+    View,
+    ScrollView,
+    TextInput,
+    KeyboardAvoidingView,
+    Keyboard,
+    Platform,
+    Dimensions,
+    Animated,
+} from 'react-native';
 import TextInputState from 'react-native/Libraries/Components/TextInput/TextInputState';
 import { getInstanceFromNode } from 'react-native/Libraries/Renderer/shims/ReactNativeComponentTree';
 
 export default class extends Component {
     static propTypes = {
         topOffset: PropTypes.number,
-        bottomOffset: PropTypes.number,
         keyboardOffset: PropTypes.number,
-        getMultiLineInputHandles: PropTypes.func,
+        getMultilineInputHandles: PropTypes.func,
+        multilineInputStyle: PropTypes.oneOfType([
+            PropTypes.object,
+            PropTypes.array,
+            PropTypes.number,
+        ]),
     };
 
     static defaultProps = {
         topOffset: 0,
-        bottomOffset: 0,
-        keyboardOffset: 40,
-        getMultiLineInputHandles: null,
+        keyboardOffset: 20,
+        getMultilineInputHandles: null,
+        multilineInputStyle: { fontSize: 17 },
+    };
+
+    state = {
+        measureInputValue: '',
+        measureInputWidth: 0,
     };
 
     componentWillMount() {
         this._root = null;
         this._moved = false;
-
-        this._scrollViewBottomOffset = new Animated.Value(0);
-        this._contentBottomOffset = new Animated.Value(0);
-
+        this._measureCallback = null;
         this._keyboardTop = null;
         this._inputInfoMap = {};
+        this._contentBottomOffset = new Animated.Value(0);
 
-        this.props.getMultiLineInputHandles &&
-        this.props.getMultiLineInputHandles({
+        this.props.getMultilineInputHandles &&
+        this.props.getMultilineInputHandles({
             onSelectionChange: this._onSelectionChange,
             onContentSizeChange: this._onContentSizeChange,
         });
@@ -51,26 +68,41 @@ export default class extends Component {
 
     render() {
         const {
-            bottomOffset,
             keyboardOffset,
-            getMultiLineInputHandles,
+            getMultilineInputHandles,
+            multilineInputStyle,
             children,
-            ...otherProps
+            ...otherProps,
         } = this.props;
 
+        const {
+            measureInputValue,
+            measureInputWidth,
+        } = this.state;
+
         return (
-            <Animated.View style={{ flex: 1, marginBottom: this._scrollViewBottomOffset }}>
-                <ScrollView ref={r => this._root = r}
-                            onMomentumScrollEnd={this._onMomentumScrollEnd}
-                            onFocusCapture={this._onFocus} {...otherProps}>
-                    <Animated.View style={{ marginBottom: this._contentBottomOffset }}
-                                   onStartShouldSetResponderCapture={this._onTouchStart}
-                                   onResponderMove={this._onTouchMove}
-                                   onResponderRelease={this._onTouchEnd}>
-                        {children}
-                    </Animated.View>
-                </ScrollView>
-            </Animated.View>
+            <KeyboardAvoidingView behavior="padding">
+                <View style={styles.wrap}>
+                    <ScrollView ref={r => this._root = r}
+                                onMomentumScrollEnd={this._onMomentumScrollEnd}
+                                onFocusCapture={this._onFocus} {...otherProps}>
+                        <Animated.View style={{ marginBottom: this._contentBottomOffset }}
+                                       onStartShouldSetResponderCapture={this._onTouchStart}
+                                       onResponderMove={this._onTouchMove}
+                                       onResponderRelease={this._onTouchEnd}>
+                            {children}
+                            <View style={styles.hidden}
+                                  pointerEvents="none">
+                                <TextInput style={[multilineInputStyle, { width: measureInputWidth }]}
+                                           value={measureInputValue}
+                                           onContentSizeChange={this._onContentSizeChangeMeasureInput}
+                                           editable={false}
+                                           multiline />
+                            </View>
+                        </Animated.View>
+                    </ScrollView>
+                </View>
+            </KeyboardAvoidingView>
         );
     }
 
@@ -103,6 +135,23 @@ export default class extends Component {
         Animated.timing(props, { toValue, duration: 250 }).start();
     }
 
+    _getInputInfo(target) {
+        return this._inputInfoMap[target] = this._inputInfoMap[target] || {};
+    }
+
+    _measureCursorPosition(text, width, callback) {
+        this._measureCallback = callback;
+        this.setState({
+            measureInputValue: text,
+            measureInputWidth: width,
+        });
+    }
+
+    _onContentSizeChangeMeasureInput = ({nativeEvent:event}) => {
+        this._measureCallback &&
+        this._measureCallback(event.contentSize.height);
+    };
+
     _onMomentumScrollEnd = ({nativeEvent:event}) => {
         if (!this._keyboardTop) return;
         const contentBottomOffset = Math.max(
@@ -121,22 +170,23 @@ export default class extends Component {
         if (!curFocusTarget) return;
 
         const inputInfo = this._inputInfoMap[curFocusTarget];
+        if (!inputInfo) return this._scrollToKeyboard(curFocusTarget, 0);
 
-        if (!inputInfo || !inputInfo.height) {
-            return this._scrollToKeyboard(curFocusTarget, 0);
-        }
-
-        const input = getInstanceFromNode(curFocusTarget);
-        input.measure((x, y, width, height, left, top) => {
-            const paddingBottom = (height - inputInfo.height) * .5;
-            const bottom = top + height;
-            const cursorRelativeBottomOffset = (inputInfo.cursorRelativeBottomOffset || 0) + paddingBottom;
-            const cursorPosition = bottom - cursorRelativeBottomOffset;
-
-            if (force || cursorPosition > this._keyboardTop - this.props.keyboardOffset) {
-                this._scrollToKeyboard(curFocusTarget, cursorRelativeBottomOffset);
-            }
-        });
+        this._measureCursorPosition(
+            inputInfo.textBeforeCursor,
+            inputInfo.width,
+            cursorRelativeTopOffset => {
+                const cursorRelativeBottomOffset = Math.max(0, inputInfo.height - cursorRelativeTopOffset);
+                const input = getInstanceFromNode(curFocusTarget);
+                input.measure((x, y, width, height, left, top) => {
+                    const bottom = top + height;
+                    const cursorPosition = bottom - cursorRelativeBottomOffset;
+                    if (force || cursorPosition > this._keyboardTop - this.props.keyboardOffset) {
+                        this._scrollToKeyboard(curFocusTarget, cursorRelativeBottomOffset);
+                    }
+                });
+            },
+        );
     };
 
     _scrollToKeyboard = (target, offset) => {
@@ -147,12 +197,10 @@ export default class extends Component {
     _onKeyboardShow = (event) => {
         this._keyboardTop = event.endCoordinates.screenY;
         const keyboardHeight = Math.max(0, Dimensions.get('window').height - this._keyboardTop);
-        this._scrollViewBottomOffset.setValue(keyboardHeight - this.props.bottomOffset);
     };
 
     _onKeyboardHide = () => {
         this._keyboardTop = null;
-        this._animate(this._scrollViewBottomOffset, 0);
         this._animate(this._contentBottomOffset, 0);
     };
 
@@ -194,31 +242,28 @@ export default class extends Component {
         TextInputState.focusTextInput(event.target);
 
         // 确保 _scrollToKeyboardRequest 在 onSelectionChange 之后执行
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                this._scrollToKeyboardRequest();
-            });
-        });
+        setTimeout(() => {
+            this._scrollToKeyboardRequest();
+        }, 100);
     };
 
     // onSelectionChange 在 onFocus 之后，在 keyboardDidShow 之前触发
     // onSelectionChange 在 onContentSizeChange 之前触发
     _onSelectionChange = ({nativeEvent:event}) => {
-        // 使用异步使 onSelectionChange 在 onContentSizeChange 之后执行
+        // 当 _onSelectionChange 执行时，输入元素的 value 值可能还没有被更新
+        // 这里的延迟确保输入元素的 value 已经被更新
         setTimeout(() => {
-            const inputInfo = this._inputInfoMap[event.target];
-            if (!inputInfo || !inputInfo.height) return;
-
             const text = getInstanceFromNode(event.target)._currentElement.props.value;
             if (typeof text !== 'string') return;
 
-            const cursorPosition = event.selection.end;
-            inputInfo.cursorRelativeBottomOffset = calcOffset(inputInfo.height, getLineCount(text), getLineCount(text.substr(0, cursorPosition)));
+            const inputInfo = this._getInputInfo(event.target);
+            inputInfo.textBeforeCursor = text.substr(0, event.selection.end);
         });
     };
 
     _onContentSizeChange = ({nativeEvent:event}) => {
-        const inputInfo = this._inputInfoMap[event.target] = this._inputInfoMap[event.target] || {};
+        const inputInfo = this._getInputInfo(event.target);
+        inputInfo.width = event.contentSize.width;
         inputInfo.height = event.contentSize.height;
 
         // 使用异步保证 scrollToKeyboardRequest 在 onSelectionChange 之后执行
@@ -228,10 +273,15 @@ export default class extends Component {
     };
 }
 
-function calcOffset(height, totalLine, curLine) {
-    return height / totalLine * (totalLine - curLine);
-}
+const styles = StyleSheet.create({
+    wrap: {
+        height: '100%',
+    },
 
-function getLineCount(text) {
-    return text.split('\n').length;
-}
+    hidden: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        opacity: 0,
+    },
+});

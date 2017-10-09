@@ -53,20 +53,20 @@ import InputScrollView from 'react-native-input-scroll-view';
 constructor(props) {
     super(props);
     this.state = {
-        multiLineInputHandles: null,
+        multilineInputHandles: null,
     };
 }
 
 render() {
     return (
-        <InputScrollView getMultiLineInputHandles={handles => this.setState({multiLineInputHandles: handles})}>
+        <InputScrollView getMultilineInputHandles={handles => this.setState({multilineInputHandles: handles})}>
             <TextInput />
             <TextInput />
             <TextInput />
             <TextInput value={this.state.remarks}
               onChangeText={text => this.setState({remarks: text})}
               multiline
-              {...this.state.multiLineInputHandles} />
+              {...this.state.multilineInputHandles} />
       	</InputScrollView>
     );
 }
@@ -80,7 +80,7 @@ render() {
 
 #### props.keyboardOffset
 
-`default: 40`
+`default: 20`
 
 When automatic adjustment, the cursor relative to the top of the keyboard offset.
 
@@ -90,17 +90,17 @@ When automatic adjustment, the cursor relative to the top of the keyboard offset
 
 If your `ScrollView` is at a distance from the top of the window, say a `navigatorHeight` distance, then set it to `navigatorHeight`.
 
-#### props.bottomOffset
-
-`default: 0`
-
-If your `ScrollView` is at a distance from the bottom of the window, say a `tabBarHeight` distance, then set it to `tabBarHeight`.
-
-#### props.getMultiLineInputHandles
+#### props.getMultilineInputHandles
 
 `default: null`
 
 If I set it to a function, this function returns an object, this object contains two more event callbacks, `onSelectionChange` and `onContentSizeChange`,  to deal with the corresponding event of multiline `TextInput`.
+
+#### props.multilineInputStyle
+
+`default: { fontSize: 17 }`
+
+If your multiline `TextInput` has a specific style, to ensure that the cursor can be accurately adjusted to the top of the keyboard, this is set as a multiline `TextInput` style, The style attributes that mainly include `fontSize`、`fontFamily`、`lineHeight` etc. affect the position of the cursor. **Be careful not to include `width` and `height`**.
 
 
 
