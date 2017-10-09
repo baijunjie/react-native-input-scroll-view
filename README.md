@@ -7,7 +7,7 @@ Mainly to achieve the following functions：
 - When the multiline `TextInput` create new line, the new line will automatically adjust to the top of the keyboard.
 - Put your finger on top of `TextInput` and slide `ScrollView`, when you lift your finger, the `TextInput` will not get focus.
 
-All of these features are for IOS only.
+
 
 ![demo](https://github.com/baijunjie/react-native-input-scroll-view/blob/master/demo.gif)
 
