@@ -68,6 +68,7 @@ export default class extends Component {
 
     render() {
         const {
+            topOffset,
             keyboardOffset,
             getMultilineInputHandles,
             multilineInputStyle,
@@ -147,10 +148,15 @@ export default class extends Component {
         });
     }
 
-    _onContentSizeChangeMeasureInput = ({nativeEvent:event}) => {
-        this._measureCallback &&
+    _onContentSizeChangeMeasureInput = debounce(event => {
+        if (!this._measureCallback) return;
         this._measureCallback(event.contentSize.height);
-    };
+        this._measureCallback = null;
+        this.setState({
+            measureInputValue: '',
+            measureInputWidth: 0,
+        });
+    });
 
     _onMomentumScrollEnd = ({nativeEvent:event}) => {
         if (!this._keyboardTop) return;
@@ -196,7 +202,6 @@ export default class extends Component {
 
     _onKeyboardShow = (event) => {
         this._keyboardTop = event.endCoordinates.screenY;
-        const keyboardHeight = Math.max(0, Dimensions.get('window').height - this._keyboardTop);
     };
 
     _onKeyboardHide = () => {
@@ -214,7 +219,7 @@ export default class extends Component {
             return uiViewClassName === 'RCTTextField' || uiViewClassName === 'RCTTextView';
         } else {
             uiViewClassName = typeof event._targetInst._currentElement === 'object' &&
-                                event._targetInst._currentElement.type.displayName;
+                event._targetInst._currentElement.type.displayName;
             return uiViewClassName === 'AndroidTextInput';
         }
     };
@@ -250,9 +255,10 @@ export default class extends Component {
     // onSelectionChange 在 onFocus 之后，在 keyboardDidShow 之前触发
     // onSelectionChange 在 onContentSizeChange 之前触发
     _onSelectionChange = ({nativeEvent:event}) => {
-        // 当 _onSelectionChange 执行时，输入元素的 value 值可能还没有被更新
+        // 当 onSelectionChange 执行时，输入元素的 value 值可能还没有被更新
         // 这里的延迟确保输入元素的 value 已经被更新
-        setTimeout(() => {
+        // 在 release 版本中必须使用 requestAnimationFrame
+        requestAnimationFrame(() => {
             const text = getInstanceFromNode(event.target)._currentElement.props.value;
             if (typeof text !== 'string') return;
 
@@ -261,14 +267,26 @@ export default class extends Component {
         });
     };
 
-    _onContentSizeChange = ({nativeEvent:event}) => {
+    // 使用防抖函数有两个目的
+    // - 确保 scrollToKeyboardRequest 在 onSelectionChange 之后执行
+    // - 短时间内不会重复执行 onContentSizeChange
+    _onContentSizeChange = debounce(event => {
         const inputInfo = this._getInputInfo(event.target);
         inputInfo.width = event.contentSize.width;
         inputInfo.height = event.contentSize.height;
+        this._scrollToKeyboardRequest(true);
+    });
+}
 
-        // 使用异步保证 scrollToKeyboardRequest 在 onSelectionChange 之后执行
-        setTimeout(() => {
-            this._scrollToKeyboardRequest(true);
+function debounce(func) {
+    let id;
+    return function({nativeEvent:event}) {
+        cancelAnimationFrame(id);
+        id = requestAnimationFrame(() => {
+            id = requestAnimationFrame(() => {
+                id = null;
+                func.call(this, event);
+            });
         });
     };
 }
