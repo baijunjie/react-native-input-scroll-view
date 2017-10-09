@@ -155,14 +155,18 @@ export default class extends Component {
         });
     }
 
-    _onContentSizeChangeMeasureInput = ({nativeEvent:event}) => {
+    // 这里必须使用防抖函数
+    // 因为在真机上，当行数增多时，每调整一次 measureInputValue，onContentSizeChange 都会触发多次。
+    // 如果不使用防抖函数，那么在 onContentSizeChange 第一次触发时，measureInputVisible 就会被设置为 false，导致无法获取正确的值。
+    // 但在模拟器上没有这个问题。
+    _onContentSizeChangeMeasureInput = debounce(event => {
         if (!this._measureCallback) return;
         this._measureCallback(event.contentSize.height);
         this._measureCallback = null;
         this.setState({
             measureInputVisible: false,
         });
-    };
+    });
 
     _onMomentumScrollEnd = ({nativeEvent:event}) => {
         if (!this._keyboardTop) return;
