@@ -84,12 +84,6 @@ render() {
 
 When automatic adjustment, the cursor relative to the top of the keyboard offset.
 
-#### props.topOffset
-
-`default: 0`
-
-If your `ScrollView` is at a distance from the top of the window, say a `navigatorHeight` distance, then set it to `navigatorHeight`.
-
 #### props.getMultilineInputHandles
 
 `default: null`

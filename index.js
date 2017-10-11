@@ -19,9 +19,10 @@ import {
 import TextInputState from 'react-native/Libraries/Components/TextInput/TextInputState';
 import { getInstanceFromNode } from 'react-native/Libraries/Renderer/shims/ReactNativeComponentTree';
 
+const isIOS = Platform.OS === 'ios';
+
 export default class extends Component {
     static propTypes = {
-        topOffset: PropTypes.number,
         keyboardOffset: PropTypes.number,
         getMultilineInputHandles: PropTypes.func,
         multilineInputStyle: PropTypes.oneOfType([
@@ -32,7 +33,6 @@ export default class extends Component {
     };
 
     static defaultProps = {
-        topOffset: 0,
         keyboardOffset: 40,
         getMultilineInputHandles: null,
         multilineInputStyle: { fontSize: 17 },
@@ -50,6 +50,7 @@ export default class extends Component {
         this._moved = false;
         this._measureCallback = null;
         this._keyboardTop = null;
+        this._topOffset = 0;
         this._inputInfoMap = {};
 
         this.props.getMultilineInputHandles &&
@@ -68,7 +69,6 @@ export default class extends Component {
 
     render() {
         const {
-            topOffset,
             keyboardOffset,
             getMultilineInputHandles,
             multilineInputStyle,
@@ -86,7 +86,7 @@ export default class extends Component {
         return (
             <KeyboardAvoidingView behavior="padding">
                 <View style={styles.wrap}>
-                    <ScrollView ref={r => this._root = r}
+                    <ScrollView ref={this._onRef}
                                 onMomentumScrollEnd={this._onMomentumScrollEnd}
                                 onFocusCapture={this._onFocus} {...otherProps}>
                         <View style={{ marginBottom: contentBottomOffset }}
@@ -104,7 +104,6 @@ export default class extends Component {
                                                editable={false}
                                                multiline />
                                 }
-
                             </View>
                         </View>
                     </ScrollView>
@@ -166,7 +165,17 @@ export default class extends Component {
         this.setState({
             measureInputVisible: false,
         });
-    });
+    }, 3);
+
+    _onRef = root => {
+        if (!root) return;
+        this._root = root;
+        setTimeout(() => {
+            root._innerViewRef.measureInWindow((x, y, width, height) => {
+                this._topOffset = y;
+            });
+        });
+    };
 
     _onMomentumScrollEnd = ({nativeEvent:event}) => {
         if (!this._keyboardTop) return;
@@ -187,27 +196,35 @@ export default class extends Component {
         if (!curFocusTarget) return;
 
         const inputInfo = this._inputInfoMap[curFocusTarget];
-        if (!inputInfo) return this._scrollToKeyboard(curFocusTarget, 0);
+        if (!inputInfo || inputInfo.cursorIsLast) {
+            inputInfo.cursorIsLast = false;
+            return this._scrollToKeyboard(curFocusTarget, 0);
+        }
 
         this._measureCursorPosition(
             inputInfo.textBeforeCursor,
             inputInfo.width,
             cursorRelativeTopOffset => {
                 const cursorRelativeBottomOffset = Math.max(0, inputInfo.height - cursorRelativeTopOffset);
-                const input = getInstanceFromNode(curFocusTarget);
-                input.measure((x, y, width, height, left, top) => {
-                    const bottom = top + height;
-                    const cursorPosition = bottom - cursorRelativeBottomOffset;
-                    if (force || cursorPosition > this._keyboardTop - this.props.keyboardOffset) {
-                        this._scrollToKeyboard(curFocusTarget, cursorRelativeBottomOffset);
-                    }
-                });
-            },
+
+                if (force) {
+                    this._scrollToKeyboard(curFocusTarget, cursorRelativeBottomOffset);
+                } else {
+                    const input = getInstanceFromNode(curFocusTarget);
+                    input.measure((x, y, width, height, left, top) => {
+                        const bottom = top + height;
+                        const cursorPosition = bottom - cursorRelativeBottomOffset;
+                        if (cursorPosition > this._keyboardTop - this.props.keyboardOffset) {
+                            this._scrollToKeyboard(curFocusTarget, cursorRelativeBottomOffset);
+                        }
+                    });
+                }
+            }
         );
     };
 
     _scrollToKeyboard = (target, offset) => {
-        const toKeyboardOffset = this.props.topOffset + this.props.keyboardOffset - offset;
+        const toKeyboardOffset = this._topOffset + this.props.keyboardOffset - offset;
         this._root.scrollResponderScrollNativeHandleToKeyboard(target, toKeyboardOffset, true);
     };
 
@@ -225,7 +242,7 @@ export default class extends Component {
         if (event.target === TextInputState.currentlyFocusedField()) return false;
 
         let uiViewClassName;
-        if (Platform.OS === 'ios') {
+        if (isIOS) {
             uiViewClassName = event._targetInst.viewConfig.uiViewClassName;
             return uiViewClassName === 'RCTTextField' || uiViewClassName === 'RCTTextView';
         } else {
@@ -240,6 +257,8 @@ export default class extends Component {
     };
 
     _onTouchEnd = ({...event}) => {
+        // 针对 android 设备输入框无法获取焦点的 hack
+        // 在 ios 中无效
         if (this._moved) {
             this._moved = false;
         } else {
@@ -257,48 +276,71 @@ export default class extends Component {
         // 所以这里手动再设置一次焦点
         TextInputState.focusTextInput(event.target);
 
-        // 确保 _scrollToKeyboardRequest 在 onSelectionChange 之后执行
+        const inputInfo = this._getInputInfo(event.target);
+        inputInfo.onFocusRequireScroll = true;
+
         setTimeout(() => {
-            this._scrollToKeyboardRequest();
+            // 如果 onSelectionChange 没有触发，则在这里触发
+            if (inputInfo.onFocusRequireScroll) {
+                inputInfo.onFocusRequireScroll = false;
+                this._scrollToKeyboardRequest();
+            }
         }, 100);
     };
 
     // onSelectionChange 在 onFocus 之后，在 keyboardDidShow 之前触发
     // onSelectionChange 在 onContentSizeChange 之前触发
     _onSelectionChange = ({nativeEvent:event}) => {
-        // 当 onSelectionChange 执行时，输入元素的 value 值可能还没有被更新
+        // 当 onSelectionChange 执行时，输入元素的 value 值可能还没有被更新，通常会延迟一帧才会更新
         // 这里的延迟确保输入元素的 value 已经被更新
         // 在 release 版本中必须使用 requestAnimationFrame
         requestAnimationFrame(() => {
-            const text = getInstanceFromNode(event.target)._currentElement.props.value;
-            if (typeof text !== 'string') return;
+            requestAnimationFrame(() => {
+                const text = getInstanceFromNode(event.target)._currentElement.props.value;
+                if (typeof text !== 'string') return;
 
-            const inputInfo = this._getInputInfo(event.target);
-            inputInfo.textBeforeCursor = text.substr(0, event.selection.end);
+                const inputInfo = this._getInputInfo(event.target);
+                inputInfo.textBeforeCursor = text.substr(0, event.selection.end);
+                if (text.length === event.selection.end) {
+                    inputInfo.cursorIsLast = true;
+                } else {
+                    inputInfo.textBeforeCursor = text.substr(0, event.selection.end);
+                }
+
+                if (inputInfo.onFocusRequireScroll) {
+                    inputInfo.onFocusRequireScroll = false;
+                    this._scrollToKeyboardRequest();
+                }
+            });
         });
     };
 
     // 使用防抖函数有两个目的
     // - 确保 scrollToKeyboardRequest 在 onSelectionChange 之后执行
-    // - 短时间内不会重复执行 onContentSizeChange
+    // - 短时间内不会重复执行 onContentSizeChange，因为当一次粘贴进许多行文本时，可能会连续触发多次 onContentSizeChange
     _onContentSizeChange = debounce(event => {
         const inputInfo = this._getInputInfo(event.target);
         inputInfo.width = event.contentSize.width;
         inputInfo.height = event.contentSize.height;
         this._scrollToKeyboardRequest(true);
-    });
+    }, 3);
 }
 
-function debounce(func) {
-    let id;
+function debounce(func, wait) {
+    wait = wait || 1;
+    let id, count;
+    let rAF = function(event) {
+        if (count) {
+            count--;
+            id = requestAnimationFrame(() => rAF.call(this, event));
+        } else {
+            func.call(this, event);
+        }
+    };
     return function({nativeEvent:event}) {
         cancelAnimationFrame(id);
-        id = requestAnimationFrame(() => {
-            id = requestAnimationFrame(() => {
-                id = null;
-                func.call(this, event);
-            });
-        });
+        count = wait;
+        rAF.call(this, event);
     };
 }
 
