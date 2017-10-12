@@ -137,10 +137,6 @@ export default class extends Component {
         });
     }
 
-    _animate(props, toValue) {
-        Animated.timing(props, { toValue, duration: 250 }).start();
-    }
-
     _getInputInfo(target) {
         return this._inputInfoMap[target] = this._inputInfoMap[target] || {};
     }
@@ -155,7 +151,7 @@ export default class extends Component {
     }
 
     // 这里必须使用防抖函数
-    // 因为在真机上，当行数增多时，每调整一次 measureInputValue，onContentSizeChange 都会触发多次。
+    // 因为在真机上，当行数增多时，每调整一次 measureInputValue 的值，onContentSizeChange 都会触发多次。
     // 如果不使用防抖函数，那么在 onContentSizeChange 第一次触发时，measureInputVisible 就会被设置为 false，导致无法获取正确的值。
     // 但在模拟器上没有这个问题。
     _onContentSizeChangeMeasureInput = debounce(event => {
@@ -293,7 +289,7 @@ export default class extends Component {
     _onSelectionChange = ({nativeEvent:event}) => {
         // 当 onSelectionChange 执行时，输入元素的 value 值可能还没有被更新，通常会延迟一帧才会更新
         // 这里的延迟确保输入元素的 value 已经被更新
-        // 在 release 版本中必须使用 requestAnimationFrame
+        // 在 release 版本中必须使用两个 requestAnimationFrame
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 const text = getInstanceFromNode(event.target)._currentElement.props.value;
