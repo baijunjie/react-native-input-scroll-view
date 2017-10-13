@@ -14,10 +14,8 @@ import {
     KeyboardAvoidingView,
     Keyboard,
     Platform,
-    Dimensions,
 } from 'react-native';
 import TextInputState from 'react-native/Libraries/Components/TextInput/TextInputState';
-import { getInstanceFromNode } from 'react-native/Libraries/Renderer/shims/ReactNativeComponentTree';
 
 const isIOS = Platform.OS === 'ios';
 
@@ -47,9 +45,9 @@ export default class extends Component {
 
     componentWillMount() {
         this._root = null;
-        this._moved = false;
         this._measureCallback = null;
-        this._keyboardTop = null;
+        this._moved = false;
+        this._keyboardShow = false;
         this._topOffset = 0;
         this._inputInfoMap = {};
 
@@ -174,7 +172,7 @@ export default class extends Component {
     };
 
     _onMomentumScrollEnd = ({nativeEvent:event}) => {
-        if (!this._keyboardTop) return;
+        if (!this._keyboardShow) return;
         const contentBottomOffset = Math.max(
             0,
             this.state.contentBottomOffset +
@@ -185,15 +183,15 @@ export default class extends Component {
         this.setState({ contentBottomOffset });
     };
 
-    _scrollToKeyboardRequest = (force) => {
-        if (!this._keyboardTop) return;
+    _scrollToKeyboardRequest = () => {
+        if (!this._keyboardShow) return;
 
         const curFocusTarget = TextInputState.currentlyFocusedField();
         if (!curFocusTarget) return;
 
         const inputInfo = this._inputInfoMap[curFocusTarget];
-        if (!inputInfo || inputInfo.cursorIsLast) {
-            inputInfo.cursorIsLast = false;
+        if (inputInfo.cursorAtLastLine) {
+            inputInfo.cursorAtLastLine = false;
             return this._scrollToKeyboard(curFocusTarget, 0);
         }
 
@@ -202,19 +200,7 @@ export default class extends Component {
             inputInfo.width,
             cursorRelativeTopOffset => {
                 const cursorRelativeBottomOffset = Math.max(0, inputInfo.height - cursorRelativeTopOffset);
-
-                if (force) {
-                    this._scrollToKeyboard(curFocusTarget, cursorRelativeBottomOffset);
-                } else {
-                    const input = getInstanceFromNode(curFocusTarget);
-                    input.measure((x, y, width, height, left, top) => {
-                        const bottom = top + height;
-                        const cursorPosition = bottom - cursorRelativeBottomOffset;
-                        if (cursorPosition > this._keyboardTop - this.props.keyboardOffset) {
-                            this._scrollToKeyboard(curFocusTarget, cursorRelativeBottomOffset);
-                        }
-                    });
-                }
+                this._scrollToKeyboard(curFocusTarget, cursorRelativeBottomOffset);
             }
         );
     };
@@ -225,11 +211,11 @@ export default class extends Component {
     };
 
     _onKeyboardShow = (event) => {
-        this._keyboardTop = event.endCoordinates.screenY;
+        this._keyboardShow = true;
     };
 
     _onKeyboardHide = () => {
-        this._keyboardTop = null;
+        this._keyboardShow = false;
         this.setState({ contentBottomOffset: 0 });
     };
 
@@ -239,7 +225,8 @@ export default class extends Component {
 
         let uiViewClassName;
         if (isIOS) {
-            uiViewClassName = event._targetInst.viewConfig.uiViewClassName;
+            uiViewClassName = event._targetInst.type || // >= react-native 0.49
+                              event._targetInst.viewConfig.uiViewClassName; // <= react-native 0.48
             return uiViewClassName === 'RCTTextField' || uiViewClassName === 'RCTTextView';
         } else {
             uiViewClassName = typeof event._targetInst._currentElement === 'object' &&
@@ -263,7 +250,7 @@ export default class extends Component {
     };
 
     // _onFocus 在 keyboardWillShow 之后触发，在 keyboardDidShow 之前触发
-    _onFocus = ({nativeEvent:event}) => {
+    _onFocus = ({...event}) => {
         // 当 onStartShouldSetResponderCapture 返回 true 时
         // 被激活的 TextInput 无法使用 Keyboard.dismiss() 来收起键盘
         // TextInputState.currentlyFocusedField() 也无法获取当前焦点ID
@@ -273,34 +260,48 @@ export default class extends Component {
         TextInputState.focusTextInput(event.target);
 
         const inputInfo = this._getInputInfo(event.target);
-        inputInfo.onFocusRequireScroll = true;
+        const targetNode = event._targetInst;
+        const multiline = targetNode.memoizedProps ?
+                          targetNode.memoizedProps.multiline : // >= react-native 0.49
+                          targetNode._currentElement.props.multiline; // <= react-native 0.48
 
-        setTimeout(() => {
-            // 如果 onSelectionChange 没有触发，则在这里触发
-            if (inputInfo.onFocusRequireScroll) {
-                inputInfo.onFocusRequireScroll = false;
-                this._scrollToKeyboardRequest();
-            }
-        }, 100);
+        if (multiline) {
+            inputInfo.onFocusRequireScroll = true;
+            setTimeout(() => {
+                // 如果 onSelectionChange 没有触发，则在这里触发
+                if (inputInfo.onFocusRequireScroll) {
+                    inputInfo.onFocusRequireScroll = false;
+                    this._scrollToKeyboardRequest();
+                }
+            }, 100);
+        } else {
+            inputInfo.cursorAtLastLine = true;
+            this._scrollToKeyboardRequest();
+        }
     };
 
     // onSelectionChange 在 onFocus 之后，在 keyboardDidShow 之前触发
     // onSelectionChange 在 onContentSizeChange 之前触发
-    _onSelectionChange = ({nativeEvent:event}) => {
+    _onSelectionChange = ({...event}) => {
         // 当 onSelectionChange 执行时，输入元素的 value 值可能还没有被更新，通常会延迟一帧才会更新
         // 这里的延迟确保输入元素的 value 已经被更新
         // 在 release 版本中必须使用两个 requestAnimationFrame
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                const text = getInstanceFromNode(event.target)._currentElement.props.value;
+                const targetNode = event._targetInst;
+                const text = targetNode.memoizedProps ?
+                             targetNode.memoizedProps.value : // >= react-native 0.49
+                             targetNode._currentElement.props.value; // <= react-native 0.48
+
                 if (typeof text !== 'string') return;
 
                 const inputInfo = this._getInputInfo(event.target);
-                inputInfo.textBeforeCursor = text.substr(0, event.selection.end);
-                if (text.length === event.selection.end) {
-                    inputInfo.cursorIsLast = true;
+                const selectionEnd = event.nativeEvent.selection.end;
+
+                if (text.length === selectionEnd) {
+                    inputInfo.cursorAtLastLine = true;
                 } else {
-                    inputInfo.textBeforeCursor = text.substr(0, event.selection.end);
+                    inputInfo.textBeforeCursor = text.substr(0, selectionEnd);
                 }
 
                 if (inputInfo.onFocusRequireScroll) {
