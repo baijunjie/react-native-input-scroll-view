@@ -271,6 +271,7 @@ export default class extends Component {
                 // 如果 onSelectionChange 没有触发，则在这里触发
                 if (inputInfo.onFocusRequireScroll) {
                     inputInfo.onFocusRequireScroll = false;
+                    inputInfo.cursorAtLastLine = true;
                     this._scrollToKeyboardRequest();
                 }
             }, 100);
@@ -300,6 +301,7 @@ export default class extends Component {
 
                 if (text.length === selectionEnd) {
                     inputInfo.cursorAtLastLine = true;
+                    inputInfo.textBeforeCursor = text;
                 } else {
                     inputInfo.textBeforeCursor = text.substr(0, selectionEnd);
                 }
