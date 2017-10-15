@@ -9,7 +9,7 @@ Mainly to achieve the following functions：
 
 
 
-![demo](https://github.com/baijunjie/react-native-input-scroll-view/blob/master/demo.gif)
+![demo](https://github.com/baijunjie/react-native-input-scroll-view/blob/master/images/demo.gif)
 
 ## Installation
 
@@ -104,6 +104,12 @@ If your multiline `TextInput` has a specific style, to ensure that the cursor ca
 "react": "^16.0.0-alpha.12"
 "react-native": ">=0.46.0"
 ```
+
+
+
+## Produt case
+
+[![App_Store](https://github.com/baijunjie/react-native-input-scroll-view/blob/master/images/App_Store.png)](https://itunes.apple.com/us/app/id-butler-free/id1291749714?mt=8)
 
 
 
