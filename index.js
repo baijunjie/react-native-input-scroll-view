@@ -53,6 +53,7 @@ export default class extends Component {
 
         this.props.getMultilineInputHandles &&
         this.props.getMultilineInputHandles({
+            onChange: this._onChange,
             onSelectionChange: this._onSelectionChange,
             onContentSizeChange: this._onContentSizeChange,
         });
@@ -281,36 +282,33 @@ export default class extends Component {
         }
     };
 
+    // onChange 在 onContentSizeChange 之前触发
+    // onChange 在 onSelectionChange 之后触发
+    _onChange = ({...event}) => {
+        const inputInfo = this._getInputInfo(event.target);
+        inputInfo.text = event.nativeEvent.text;
+    }
+
     // onSelectionChange 在 onFocus 之后，在 keyboardDidShow 之前触发
     // onSelectionChange 在 onContentSizeChange 之前触发
     _onSelectionChange = ({...event}) => {
-        // 当 onSelectionChange 执行时，输入元素的 value 值可能还没有被更新，通常会延迟一帧才会更新
-        // 这里的延迟确保输入元素的 value 已经被更新
-        // 在 release 版本中必须使用两个 requestAnimationFrame
+        // 确保处理代码在 onChange 之后执行
         requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                const targetNode = event._targetInst;
-                const text = targetNode.memoizedProps ?
-                             targetNode.memoizedProps.value : // >= react-native 0.49
-                             targetNode._currentElement.props.value; // <= react-native 0.48
+            const selectionEnd = event.nativeEvent.selection.end;
+            const inputInfo = this._getInputInfo(event.target);
+            const text = inputInfo.text;
 
-                if (typeof text !== 'string') return;
+            if (!text || text.length === selectionEnd) {
+                inputInfo.cursorAtLastLine = true;
+                inputInfo.textBeforeCursor = text;
+            } else {
+                inputInfo.textBeforeCursor = text.substr(0, selectionEnd);
+            }
 
-                const inputInfo = this._getInputInfo(event.target);
-                const selectionEnd = event.nativeEvent.selection.end;
-
-                if (text.length === selectionEnd) {
-                    inputInfo.cursorAtLastLine = true;
-                    inputInfo.textBeforeCursor = text;
-                } else {
-                    inputInfo.textBeforeCursor = text.substr(0, selectionEnd);
-                }
-
-                if (inputInfo.onFocusRequireScroll) {
-                    inputInfo.onFocusRequireScroll = false;
-                    this._scrollToKeyboardRequest();
-                }
-            });
+            if (inputInfo.onFocusRequireScroll) {
+                inputInfo.onFocusRequireScroll = false;
+                this._scrollToKeyboardRequest();
+            }
         });
     };
 

@@ -64,15 +64,35 @@ render() {
             <TextInput />
             <TextInput />
             <TextInput value={this.state.remarks}
-              onChangeText={text => this.setState({remarks: text})}
-              multiline
-              {...this.state.multilineInputHandles} />
+                       onChangeText={text => this.setState({remarks: text})}
+                       multiline
+                       {...this.state.multilineInputHandles} />
       	</InputScrollView>
     );
 }
 ```
 
-**Note that if the cursor is to be correctly adjusted to the top of the keyboard, you must bind `value` to `TextInput`.**
+**Note, It's recommended to use `onChangeText` to bind `value`. Because `multilineInputHandles` contains `onChange`, If you must use `onChange`, you can use the following methods: **
+
+```jsx
+render() {
+    const { changeHandle, ...otherHandles } = this.state.multilineInputHandles;
+    return (
+        <InputScrollView getMultilineInputHandles={handles => this.setState({multilineInputHandles: handles})}>
+            <TextInput />
+            <TextInput />
+            <TextInput />
+            <TextInput value={this.state.remarks}
+                       onChange={({...event}) => {
+                           changeHandle({event});
+                           this.setState({remarks: event.nativeEvent.text});
+          	           }}
+                       multiline
+                       {...otherHandles} />
+      	</InputScrollView>
+    );
+}
+```
 
 
 
@@ -88,7 +108,7 @@ When automatic adjustment, the cursor relative to the top of the keyboard offset
 
 `default: null`
 
-If I set it to a function, this function returns an object, this object contains two more event callbacks, `onSelectionChange` and `onContentSizeChange`,  to deal with the corresponding event of multiline `TextInput`.
+If I set it to a function, this function returns an object, this object contains two more event callbacks,  `onChange` and `onSelectionChange` and `onContentSizeChange`,  to deal with the corresponding event of multiline `TextInput`.
 
 #### props.multilineInputStyle
 
