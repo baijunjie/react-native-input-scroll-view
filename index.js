@@ -165,9 +165,9 @@ export default class extends Component {
             uiViewClassName = event._targetInst.viewConfig.uiViewClassName;
             return uiViewClassName === 'RCTTextField' || uiViewClassName === 'RCTTextView';
         } else {
-            uiViewClassName = typeof event._targetInst._currentElement === 'object' &&
-                                event._targetInst._currentElement.type.displayName;
-            return uiViewClassName === 'AndroidTextInput';
+            return (typeof event._targetInst._currentElement === 'object' &&
+                event._targetInst._currentElement.type.displayName === 'AndroidTextInput') || typeof event._targetInst._currentElement === 'string';
+            
         }
     };
 
