@@ -293,13 +293,14 @@ export default class extends Component {
     // onSelectionChange 在 onContentSizeChange 之前触发
     _onSelectionChange = ({...event}) => {
         // 确保处理代码在 onChange 之后执行
+        // release 版本必须使用 requestAnimationFrame
         requestAnimationFrame(() => {
             const selectionEnd = event.nativeEvent.selection.end;
             const inputInfo = this._getInputInfo(event.target);
             const text = inputInfo.text;
 
-            if (!text || text.length === selectionEnd) {
-                inputInfo.cursorAtLastLine = true;
+            inputInfo.cursorAtLastLine = !text || text.length === selectionEnd;
+            if (inputInfo.cursorAtLastLine) {
                 inputInfo.textBeforeCursor = text;
             } else {
                 inputInfo.textBeforeCursor = text.substr(0, selectionEnd);
@@ -320,7 +321,7 @@ export default class extends Component {
         inputInfo.width = event.contentSize.width;
         inputInfo.height = event.contentSize.height;
         this._scrollToKeyboardRequest(true);
-    }, 3);
+    }, 2);
 }
 
 function debounce(func, wait) {
