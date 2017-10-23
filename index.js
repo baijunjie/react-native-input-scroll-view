@@ -297,7 +297,14 @@ export default class extends Component {
         requestAnimationFrame(() => {
             const selectionEnd = event.nativeEvent.selection.end;
             const inputInfo = this._getInputInfo(event.target);
-            const text = inputInfo.text;
+            let text = inputInfo.text;
+
+            if (text === undefined) {
+                const targetNode = event._targetInst;
+                text = targetNode.memoizedProps ?
+                       targetNode.memoizedProps.value : // >= react-native 0.49
+                       targetNode._currentElement.props.value; // <= react-native 0.48
+            }
 
             inputInfo.cursorAtLastLine = !text || text.length === selectionEnd;
             if (inputInfo.cursorAtLastLine) {
