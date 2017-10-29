@@ -22,7 +22,6 @@ const isIOS = Platform.OS === 'ios';
 export default class extends Component {
     static propTypes = {
         keyboardOffset: PropTypes.number,
-        getMultilineInputHandles: PropTypes.func,
         multilineInputStyle: PropTypes.oneOfType([
             PropTypes.object,
             PropTypes.array,
@@ -32,7 +31,6 @@ export default class extends Component {
 
     static defaultProps = {
         keyboardOffset: 40,
-        getMultilineInputHandles: null,
         multilineInputStyle: { fontSize: 17 },
     };
 
@@ -51,13 +49,6 @@ export default class extends Component {
         this._topOffset = 0;
         this._inputInfoMap = {};
 
-        this.props.getMultilineInputHandles &&
-        this.props.getMultilineInputHandles({
-            onChange: this._onChange,
-            onSelectionChange: this._onSelectionChange,
-            onContentSizeChange: this._onContentSizeChange,
-        });
-
         this._addListener();
         this._extendScrollViewFunc();
     }
@@ -69,7 +60,6 @@ export default class extends Component {
     render() {
         const {
             keyboardOffset,
-            getMultilineInputHandles,
             multilineInputStyle,
             children,
             ...otherProps,
@@ -82,6 +72,8 @@ export default class extends Component {
             contentBottomOffset,
         } = this.state;
 
+        const newChildren = this._cloneDeepComponents(children);
+
         return (
             <KeyboardAvoidingView behavior="padding">
                 <View style={styles.wrap}>
@@ -92,7 +84,7 @@ export default class extends Component {
                               onStartShouldSetResponderCapture={this._onTouchStart}
                               onResponderMove={this._onTouchMove}
                               onResponderRelease={this._onTouchEnd}>
-                            {children}
+                            {newChildren}
                             <View style={styles.hidden}
                                   pointerEvents="none">
                                 {
@@ -136,6 +128,53 @@ export default class extends Component {
         });
     }
 
+    _cloneDeepComponents(Components) {
+        if (isArray(Components)) {
+            return Components.map(Comp => {
+                const newComp = { ...Comp };
+                newComp.props = { ...Comp.props };
+
+                if (newComp.props.multiline) {
+                    const onChange = newComp.props.onChange;
+                    const onSelectionChange = newComp.props.onSelectionChange;
+                    const onContentSizeChange = newComp.props.onContentSizeChange;
+
+                    newComp.props.onChange = (event) => {
+                        this._onChange(event);
+                        onChange &&
+                        onChange(event);
+                    };
+
+                    newComp.props.onSelectionChange = (event) => {
+                        this._onSelectionChange(event);
+                        onSelectionChange &&
+                        onSelectionChange(event);
+                    };
+
+                    newComp.props.onContentSizeChange = (event) => {
+                        this._onContentSizeChange(event);
+                        onContentSizeChange &&
+                        onContentSizeChange(event);
+                    };
+                }
+
+                if (newComp.props.children) {
+                    newComp.props.children = this._cloneDeepComponents(Comp.props.children);
+                }
+
+                return newComp;
+            });
+        } else if (Components.props.children) {
+            const newComp = { ...Components };
+            newComp.props = { ...Components.props };
+            newComp.props.children = this._cloneDeepComponents(Components.props.children);
+            return newComp;
+        } else {
+            return Components;
+        }
+
+    }
+
     _getInputInfo(target) {
         return this._inputInfoMap[target] = this._inputInfoMap[target] || {};
     }
@@ -157,14 +196,13 @@ export default class extends Component {
         if (!this._measureCallback) return;
         this._measureCallback(event.contentSize.height);
         this._measureCallback = null;
-        this.setState({
-            measureInputVisible: false,
-        });
+        this.setState({ measureInputVisible: false });
     }, 3);
 
     _onRef = root => {
         if (!root) return;
         this._root = root;
+
         setTimeout(() => {
             root._innerViewRef.measureInWindow((x, y, width, height) => {
                 this._topOffset = y;
@@ -190,18 +228,23 @@ export default class extends Component {
         const curFocusTarget = TextInputState.currentlyFocusedField();
         if (!curFocusTarget) return;
 
-        const inputInfo = this._inputInfoMap[curFocusTarget];
-        if (inputInfo.cursorAtLastLine) {
-            inputInfo.cursorAtLastLine = false;
+        const { text, selectionEnd, width, height } = this._inputInfoMap[curFocusTarget];
+        const cursorAtLastLine = !text ||
+                                 selectionEnd === undefined ||
+                                 text.length === selectionEnd;
+
+        if (cursorAtLastLine) {
             return this._scrollToKeyboard(curFocusTarget, 0);
         }
 
         this._measureCursorPosition(
-            inputInfo.textBeforeCursor,
-            inputInfo.width,
+            text.substr(0, selectionEnd),
+            width,
             cursorRelativeTopOffset => {
-                const cursorRelativeBottomOffset = Math.max(0, inputInfo.height - cursorRelativeTopOffset);
-                this._scrollToKeyboard(curFocusTarget, cursorRelativeBottomOffset);
+                this._scrollToKeyboard(
+                    curFocusTarget,
+                    Math.max(0, height - cursorRelativeTopOffset)
+                );
             }
         );
     };
@@ -217,7 +260,14 @@ export default class extends Component {
 
     _onKeyboardHide = () => {
         this._keyboardShow = false;
-        this.setState({ contentBottomOffset: 0 });
+        let atBottom = !!this.state.contentBottomOffset;
+        this.setState({ contentBottomOffset: 0 }, () => {
+            if (atBottom) {
+                setTimeout(() => {
+                    this._root.scrollToEnd({ animated: true });
+                });
+            }
+        });
     };
 
     // 这个方法是为了防止 ScrollView 在滑动结束后触发 TextInput 的 focus 事件
@@ -250,7 +300,8 @@ export default class extends Component {
         }
     };
 
-    // _onFocus 在 keyboardWillShow 之后触发，在 keyboardDidShow 之前触发
+    // onFocus 在 keyboardDidShow 之前触发
+    // onFocus 在 keyboardWillShow 之后触发
     _onFocus = ({...event}) => {
         // 当 onStartShouldSetResponderCapture 返回 true 时
         // 被激活的 TextInput 无法使用 Keyboard.dismiss() 来收起键盘
@@ -261,21 +312,23 @@ export default class extends Component {
         TextInputState.focusTextInput(event.target);
 
         const inputInfo = this._getInputInfo(event.target);
-        const targetNode = event._targetInst;
-        const multiline = targetNode.memoizedProps ?
-                          targetNode.memoizedProps.multiline : // >= react-native 0.49
-                          targetNode._currentElement.props.multiline; // <= react-native 0.48
+        const multiline = getProps(event._targetInst).multiline;
 
         if (multiline) {
             inputInfo.onFocusRequireScroll = true;
             setTimeout(() => {
-                // 如果 onSelectionChange 没有触发，则在这里触发
+
+                // 如果 onSelectionChange 没有触发，则在这里执行
                 if (inputInfo.onFocusRequireScroll) {
                     inputInfo.onFocusRequireScroll = false;
-                    inputInfo.cursorAtLastLine = true;
+
+                    if (inputInfo.text === undefined) {
+                        inputInfo.text = getProps(event._targetInst).value;
+                    }
+
                     this._scrollToKeyboardRequest();
                 }
-            }, 100);
+            }, 250);
         } else {
             inputInfo.cursorAtLastLine = true;
             this._scrollToKeyboardRequest();
@@ -289,28 +342,18 @@ export default class extends Component {
         inputInfo.text = event.nativeEvent.text;
     }
 
-    // onSelectionChange 在 onFocus 之后，在 keyboardDidShow 之前触发
+    // onSelectionChange 在 keyboardDidShow 之前触发
     // onSelectionChange 在 onContentSizeChange 之前触发
+    // onSelectionChange 在 onFocus 之后触发
     _onSelectionChange = ({...event}) => {
         // 确保处理代码在 onChange 之后执行
         // release 版本必须使用 requestAnimationFrame
         requestAnimationFrame(() => {
-            const selectionEnd = event.nativeEvent.selection.end;
             const inputInfo = this._getInputInfo(event.target);
-            let text = inputInfo.text;
+            inputInfo.selectionEnd = event.nativeEvent.selection.end;
 
-            if (text === undefined) {
-                const targetNode = event._targetInst;
-                text = targetNode.memoizedProps ?
-                       targetNode.memoizedProps.value : // >= react-native 0.49
-                       targetNode._currentElement.props.value; // <= react-native 0.48
-            }
-
-            inputInfo.cursorAtLastLine = !text || text.length === selectionEnd;
-            if (inputInfo.cursorAtLastLine) {
-                inputInfo.textBeforeCursor = text;
-            } else {
-                inputInfo.textBeforeCursor = text.substr(0, selectionEnd);
+            if (inputInfo.text === undefined) {
+                inputInfo.text = getProps(event._targetInst).value;
             }
 
             if (inputInfo.onFocusRequireScroll) {
@@ -331,6 +374,11 @@ export default class extends Component {
     }, 2);
 }
 
+function getProps(targetNode) {
+    return targetNode.memoizedProps || // >= react-native 0.49
+           targetNode._currentElement.props; // <= react-native 0.48
+}
+
 function debounce(func, wait) {
     wait = wait || 1;
     let id, count;
@@ -347,6 +395,10 @@ function debounce(func, wait) {
         count = wait;
         rAF.call(this, event);
     };
+}
+
+function isArray(arr) {
+    return Object.prototype.toString.call(arr) === '[object Array]';
 }
 
 const styles = StyleSheet.create({

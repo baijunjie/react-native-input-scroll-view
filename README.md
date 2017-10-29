@@ -39,60 +39,15 @@ render() {
         <InputScrollView>
             <TextInput />
             <TextInput />
-            <TextInput />
+            <TextInput value={this.state.text}
+                       onChangeText={text => this.setState({ text })}
+                       multiline />
       	</InputScrollView>
     );
 }
 ```
 
-Contains multiline `TextInput`
-
-```jsx
-import InputScrollView from 'react-native-input-scroll-view';
-...
-constructor(props) {
-    super(props);
-    this.state = {
-        multilineInputHandles: null,
-    };
-}
-
-render() {
-    return (
-        <InputScrollView getMultilineInputHandles={handles => this.setState({multilineInputHandles: handles})}>
-            <TextInput />
-            <TextInput />
-            <TextInput />
-            <TextInput value={this.state.remarks}
-                       onChangeText={text => this.setState({remarks: text})}
-                       multiline
-                       {...this.state.multilineInputHandles} />
-      	</InputScrollView>
-    );
-}
-```
-
-**Note, It's recommended to use `onChangeText` to bind `value`. Because `multilineInputHandles` contains `onChange`, If you must use `onChange`, you can use the following methods: **
-
-```jsx
-render() {
-    const { changeHandle, ...otherHandles } = this.state.multilineInputHandles;
-    return (
-        <InputScrollView getMultilineInputHandles={handles => this.setState({multilineInputHandles: handles})}>
-            <TextInput />
-            <TextInput />
-            <TextInput />
-            <TextInput value={this.state.remarks}
-                       onChange={({...event}) => {
-                           changeHandle({event});
-                           this.setState({remarks: event.nativeEvent.text});
-          	           }}
-                       multiline
-                       {...otherHandles} />
-      	</InputScrollView>
-    );
-}
-```
+**Note that if the cursor is to be correctly adjusted to the top of the keyboard, you must bind `value` to `TextInput`.**
 
 
 
@@ -103,12 +58,6 @@ render() {
 `default: 40`
 
 When automatic adjustment, the cursor relative to the top of the keyboard offset.
-
-#### props.getMultilineInputHandles
-
-`default: null`
-
-If I set it to a function, this function returns an object, this object contains two more event callbacks,  `onChange` and `onSelectionChange` and `onContentSizeChange`,  to deal with the corresponding event of multiline `TextInput`.
 
 #### props.multilineInputStyle
 
