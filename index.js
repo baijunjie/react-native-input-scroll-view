@@ -75,7 +75,7 @@ export default class extends Component {
         const newChildren = this._cloneDeepComponents(children);
 
         return (
-            <KeyboardAvoidingView behavior="padding">
+            <KeyboardAvoidingView behavior={isIOS ? 'padding' : null}>
                 <View style={styles.wrap}>
                     <ScrollView ref={this._onRef}
                                 onMomentumScrollEnd={this._onMomentumScrollEnd}
