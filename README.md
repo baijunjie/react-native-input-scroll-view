@@ -8,9 +8,9 @@ Mainly to achieve the following functions：
 - Put your finger on top of `TextInput` and slide `ScrollView`, when you lift your finger, the `TextInput` will not get focus.
 
 
-![demo](https://github.com/baijunjie/react-native-input-scroll-view/blob/master/images/demo.ios.gif)
+<img src="https://github.com/baijunjie/react-native-input-scroll-view/blob/master/images/demo.ios.gif" width="240">&nbsp;&nbsp;&nbsp;&nbsp;
+<img src="https://github.com/baijunjie/react-native-input-scroll-view/blob/master/images/demo.android.gif" width="240">
 
-![demo](https://github.com/baijunjie/react-native-input-scroll-view/blob/master/images/demo.android.gif)
 
 ## Installation
 
