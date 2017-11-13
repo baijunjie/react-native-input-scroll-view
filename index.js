@@ -19,6 +19,46 @@ import TextInputState from 'react-native/Libraries/Components/TextInput/TextInpu
 
 const isIOS = Platform.OS === 'ios';
 
+let debounce;
+
+if (isIOS) {
+    debounce = function(func, wait) {
+        wait = wait || 0;
+        let id, count;
+        let action = function(event) {
+            if (count) {
+                count--;
+                id = requestAnimationFrame(() => action.call(this, event));
+            } else {
+                func.call(this, event);
+            }
+        };
+        return function({ ...event }) {
+            cancelAnimationFrame(id);
+            count = wait;
+            action.call(this, event);
+        };
+    };
+} else {
+    debounce = function(func, wait) {
+        wait = wait || 0;
+        let id, count;
+        let action = function(event) {
+            if (count) {
+                count--;
+                id = setTimeout(() => action.call(this, event));
+            } else {
+                func.call(this, event);
+            }
+        };
+        return function({ ...event }) {
+            clearTimeout(id);
+            count = wait;
+            action.call(this, event);
+        };
+    };
+}
+
 export default class extends Component {
     static propTypes = {
         keyboardOffset: PropTypes.number,
@@ -44,7 +84,6 @@ export default class extends Component {
     componentWillMount() {
         this._root = null;
         this._measureCallback = null;
-        this._moved = false;
         this._keyboardShow = false;
         this._topOffset = 0;
         this._inputInfoMap = {};
@@ -81,7 +120,7 @@ export default class extends Component {
                                 onMomentumScrollEnd={this._onMomentumScrollEnd}
                                 onFocusCapture={this._onFocus} {...otherProps}>
                         <View style={{ marginBottom: contentBottomOffset }}
-                              onStartShouldSetResponderCapture={this._onTouchStart}
+                              onStartShouldSetResponderCapture={isIOS ? this._onTouchStart : null}
                               onResponderMove={this._onTouchMove}
                               onResponderRelease={this._onTouchEnd}>
                             {newChildren}
@@ -104,8 +143,8 @@ export default class extends Component {
     }
 
     _addListener() {
-        this._keyboardShowListener = Keyboard.addListener('keyboardWillShow', this._onKeyboardShow);
-        this._keyboardHideListener = Keyboard.addListener('keyboardWillHide', this._onKeyboardHide);
+        this._keyboardShowListener = Keyboard.addListener(isIOS ? 'keyboardWillShow' : 'keyboardDidShow', this._onKeyboardShow);
+        this._keyboardHideListener = Keyboard.addListener(isIOS ? 'keyboardWillHide' : 'keyboardDidHide', this._onKeyboardHide);
     }
 
     _removeListener() {
@@ -128,51 +167,53 @@ export default class extends Component {
         });
     }
 
-    _cloneDeepComponents(Components) {
-        if (isArray(Components)) {
-            return Components.map(Comp => {
-                const newComp = { ...Comp };
-                newComp.props = { ...Comp.props };
-
-                if (newComp.props.multiline) {
-                    const onChange = newComp.props.onChange;
-                    const onSelectionChange = newComp.props.onSelectionChange;
-                    const onContentSizeChange = newComp.props.onContentSizeChange;
-
-                    newComp.props.onChange = (event) => {
-                        this._onChange(event);
-                        onChange &&
-                        onChange(event);
-                    };
-
-                    newComp.props.onSelectionChange = (event) => {
-                        this._onSelectionChange(event);
-                        onSelectionChange &&
-                        onSelectionChange(event);
-                    };
-
-                    newComp.props.onContentSizeChange = (event) => {
-                        this._onContentSizeChange(event);
-                        onContentSizeChange &&
-                        onContentSizeChange(event);
-                    };
-                }
-
-                if (newComp.props.children) {
-                    newComp.props.children = this._cloneDeepComponents(Comp.props.children);
-                }
-
-                return newComp;
-            });
-        } else if (Components.props.children) {
-            const newComp = { ...Components };
-            newComp.props = { ...Components.props };
-            newComp.props.children = this._cloneDeepComponents(Components.props.children);
-            return newComp;
+    _cloneDeepComponents(Component) {
+        if (isArray(Component)) {
+            return Component.map(subComponent => this._cloneDeepComponents(subComponent));
+        } else if (Component.props.children) {
+            const newComponent = { ...Component };
+            newComponent.props = { ...Component.props };
+            newComponent.props.children = this._cloneDeepComponents(Component.props.children);
+            return newComponent;
+        } else if (Component.props.multiline) {
+            const newComponent = { ...Component };
+            newComponent.props = { ...Component.props };
+            return this._addMultilineHandle(newComponent);
         } else {
-            return Components;
+            return Component;
         }
+    }
 
+    _addMultilineHandle(Component) {
+        const onChange = Component.props.onChange;
+        const onSelectionChange = Component.props.onSelectionChange;
+        const onContentSizeChange = Component.props.onContentSizeChange;
+
+        Component.props.onChange = (event) => {
+            this._onChange(event);
+            onChange &&
+            onChange(event);
+        };
+
+        Component.props.onSelectionChange = ({ ...event }) => {
+            if (isIOS) {
+                // 确保处理代码在 onChange 之后执行
+                // release 版本必须使用 requestAnimationFrame
+                requestAnimationFrame(() => this._onSelectionChange(event));
+            } else {
+                setTimeout(() => this._onSelectionChange(event));
+            }
+            onSelectionChange &&
+            onSelectionChange(event);
+        };
+
+        Component.props.onContentSizeChange = ({ ...event }) => {
+            this._onContentSizeChange(event);
+            onContentSizeChange &&
+            onContentSizeChange(event);
+        };
+
+        return Component;
     }
 
     _getInputInfo(target) {
@@ -192,7 +233,7 @@ export default class extends Component {
     // 因为在真机上，当行数增多时，每调整一次 measureInputValue 的值，onContentSizeChange 都会触发多次。
     // 如果不使用防抖函数，那么在 onContentSizeChange 第一次触发时，measureInputVisible 就会被设置为 false，导致无法获取正确的值。
     // 但在模拟器上没有这个问题。
-    _onContentSizeChangeMeasureInput = debounce(event => {
+    _onContentSizeChangeMeasureInput = debounce(({nativeEvent:event}) => {
         if (!this._measureCallback) return;
         this._measureCallback(event.contentSize.height);
         this._measureCallback = null;
@@ -228,10 +269,10 @@ export default class extends Component {
         const curFocusTarget = TextInputState.currentlyFocusedField();
         if (!curFocusTarget) return;
 
-        const { text, selectionEnd, width, height } = this._inputInfoMap[curFocusTarget];
+        const { text, selectionEnd, width, height } = this._getInputInfo(curFocusTarget);
         const cursorAtLastLine = !text ||
-                                 selectionEnd === undefined ||
-                                 text.length === selectionEnd;
+            selectionEnd === undefined ||
+            text.length === selectionEnd;
 
         if (cursorAtLastLine) {
             return this._scrollToKeyboard(curFocusTarget, 0);
@@ -254,8 +295,9 @@ export default class extends Component {
         this._root.scrollResponderScrollNativeHandleToKeyboard(target, toKeyboardOffset, true);
     };
 
-    _onKeyboardShow = (event) => {
+    _onKeyboardShow = () => {
         this._keyboardShow = true;
+        this._scrollToKeyboardRequest();
     };
 
     _onKeyboardHide = () => {
@@ -271,130 +313,100 @@ export default class extends Component {
     };
 
     // 这个方法是为了防止 ScrollView 在滑动结束后触发 TextInput 的 focus 事件
-    _onTouchStart = ({...event}) => {
-        if (event.target === TextInputState.currentlyFocusedField()) return false;
+    _onTouchStart = ({ ...event }) => {
+        const target = event.target || event.currentTarget;
+        if (target === TextInputState.currentlyFocusedField()) return false;
 
+        const targetInst = event._targetInst;
         let uiViewClassName;
-        if (isIOS) {
-            uiViewClassName = event._targetInst.type || // >= react-native 0.49
-                              event._targetInst.viewConfig.uiViewClassName; // <= react-native 0.48
-            return uiViewClassName === 'RCTTextField' || uiViewClassName === 'RCTTextView';
-        } else {
-            uiViewClassName = typeof event._targetInst._currentElement === 'object' &&
-                event._targetInst._currentElement.type.displayName;
-            return uiViewClassName === 'AndroidTextInput';
-        }
+        uiViewClassName = targetInst.type || // >= react-native 0.49
+            targetInst.viewConfig.uiViewClassName; // <= react-native 0.48
+        return uiViewClassName === 'RCTTextField' || uiViewClassName === 'RCTTextView';
     };
 
-    _onTouchMove = ({...event}) => {
-        this._moved = true;
-    };
-
-    _onTouchEnd = ({...event}) => {
-        // 针对 android 设备输入框无法获取焦点的 hack
-        // 在 ios 中无效
-        if (this._moved) {
-            this._moved = false;
-        } else {
-            TextInputState.focusTextInput(event.target);
-        }
-    };
-
+    // 在单行 TextInput 中
+    // onFocus 在 keyboardWillShow 与 keyboardDidShow 之前触发
+    // 在多行 TextInput 中
     // onFocus 在 keyboardDidShow 之前触发
     // onFocus 在 keyboardWillShow 之后触发
-    _onFocus = ({...event}) => {
+    _onFocus = ({ ...event }) => {
         // 当 onStartShouldSetResponderCapture 返回 true 时
         // 被激活的 TextInput 无法使用 Keyboard.dismiss() 来收起键盘
         // TextInputState.currentlyFocusedField() 也无法获取当前焦点ID
         // 原因可能是系统并未判定 TextInput 获取焦点，这可能是一个 bug
         // 通常需要在 onStartShouldSetResponderCapture 返回 false 的情况下再点击一次 TextInput 才能恢复正常
         // 所以这里手动再设置一次焦点
-        TextInputState.focusTextInput(event.target);
+        const target = event.target || event.currentTarget;
+        TextInputState.focusTextInput(target);
 
-        const inputInfo = this._getInputInfo(event.target);
+        const inputInfo = this._getInputInfo(target);
         const multiline = getProps(event._targetInst).multiline;
 
         if (multiline) {
+            if (inputInfo.text === undefined) {
+                inputInfo.text = getProps(event._targetInst).value;
+            }
+
+            if (!isIOS) return;
+
             inputInfo.onFocusRequireScroll = true;
             setTimeout(() => {
-
                 // 如果 onSelectionChange 没有触发，则在这里执行
-                if (inputInfo.onFocusRequireScroll) {
+                if (this._keyboardShow && inputInfo.onFocusRequireScroll) {
                     inputInfo.onFocusRequireScroll = false;
-
-                    if (inputInfo.text === undefined) {
-                        inputInfo.text = getProps(event._targetInst).value;
-                    }
-
                     this._scrollToKeyboardRequest();
                 }
             }, 250);
         } else {
-            inputInfo.cursorAtLastLine = true;
-            this._scrollToKeyboardRequest();
+            if (isIOS) this._scrollToKeyboardRequest();
         }
     };
 
     // onChange 在 onContentSizeChange 之前触发
     // onChange 在 onSelectionChange 之后触发
-    _onChange = ({...event}) => {
-        const inputInfo = this._getInputInfo(event.target);
+    _onChange = ({ ...event }) => {
+        const target = event.target || event.currentTarget;
+        const inputInfo = this._getInputInfo(target);
         inputInfo.text = event.nativeEvent.text;
     }
 
     // onSelectionChange 在 keyboardDidShow 之前触发
     // onSelectionChange 在 onContentSizeChange 之前触发
     // onSelectionChange 在 onFocus 之后触发
-    _onSelectionChange = ({...event}) => {
-        // 确保处理代码在 onChange 之后执行
-        // release 版本必须使用 requestAnimationFrame
-        requestAnimationFrame(() => {
-            const inputInfo = this._getInputInfo(event.target);
-            inputInfo.selectionEnd = event.nativeEvent.selection.end;
+    _onSelectionChange = ({ ...event }) => {
+        const target = event.target || event.currentTarget;
+        const inputInfo = this._getInputInfo(target);
+        inputInfo.selectionEnd = event.nativeEvent.selection.end;
+        if (inputInfo.text === undefined) {
+            inputInfo.text = getProps(event._targetInst).value;
+        }
 
-            if (inputInfo.text === undefined) {
-                inputInfo.text = getProps(event._targetInst).value;
-            }
+        if (!isIOS) return;
 
-            if (inputInfo.onFocusRequireScroll) {
-                inputInfo.onFocusRequireScroll = false;
-                this._scrollToKeyboardRequest();
-            }
-        });
+        if (inputInfo.onFocusRequireScroll) {
+            inputInfo.onFocusRequireScroll = false;
+            this._scrollToKeyboardRequest();
+        }
     };
 
     // 使用防抖函数有两个目的
     // - 确保 scrollToKeyboardRequest 在 onSelectionChange 之后执行
     // - 短时间内不会重复执行 onContentSizeChange，因为当一次粘贴进许多行文本时，可能会连续触发多次 onContentSizeChange
-    _onContentSizeChange = debounce(event => {
-        const inputInfo = this._getInputInfo(event.target);
-        inputInfo.width = event.contentSize.width;
-        inputInfo.height = event.contentSize.height;
+    _onContentSizeChange = debounce(({ ...event }) => {
+        const target = event.target || event.currentTarget;
+        const inputInfo = this._getInputInfo(target);
+        inputInfo.width = event.nativeEvent.contentSize.width;
+        inputInfo.height = event.nativeEvent.contentSize.height;
+        if (inputInfo.text === undefined) {
+            inputInfo.text = getProps(event._targetInst).value;
+        }
         this._scrollToKeyboardRequest(true);
     }, 2);
 }
 
 function getProps(targetNode) {
     return targetNode.memoizedProps || // >= react-native 0.49
-           targetNode._currentElement.props; // <= react-native 0.48
-}
-
-function debounce(func, wait) {
-    wait = wait || 1;
-    let id, count;
-    let rAF = function(event) {
-        if (count) {
-            count--;
-            id = requestAnimationFrame(() => rAF.call(this, event));
-        } else {
-            func.call(this, event);
-        }
-    };
-    return function({nativeEvent:event}) {
-        cancelAnimationFrame(id);
-        count = wait;
-        rAF.call(this, event);
-    };
+        targetNode._currentElement.props; // <= react-native 0.48
 }
 
 function isArray(arr) {

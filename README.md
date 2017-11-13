@@ -8,8 +8,9 @@ Mainly to achieve the following functions：
 - Put your finger on top of `TextInput` and slide `ScrollView`, when you lift your finger, the `TextInput` will not get focus.
 
 
+![demo](https://github.com/baijunjie/react-native-input-scroll-view/blob/master/images/demo.ios.gif)
 
-![demo](https://github.com/baijunjie/react-native-input-scroll-view/blob/master/images/demo.gif)
+![demo](https://github.com/baijunjie/react-native-input-scroll-view/blob/master/images/demo.android.gif)
 
 ## Installation
 
@@ -34,7 +35,12 @@ Does not contain multiline `TextInput`
 ```jsx
 import InputScrollView from 'react-native-input-scroll-view';
 ...
+state = {
+    text: '',
+};
+
 render() {
+    const { text } = this.state;
     return (
         <InputScrollView>
             <TextInput />
@@ -48,6 +54,39 @@ render() {
 ```
 
 **Note that if the cursor is to be correctly adjusted to the top of the keyboard, you must bind `value` to `TextInput`.**
+
+## Multiline TextInput in the Android
+
+Because in Android, the height of the Multiline `TextInput` cannot be changed according to its content, so we need to add additional processing code
+
+```jsx
+import InputScrollView from 'react-native-input-scroll-view';
+...
+
+state = {
+    text: '',
+    textareaHeight: null,
+};
+
+render() {
+    const { text, textareaHeight } = this.state;
+    return (
+        <InputScrollView>
+            <TextInput />
+            <TextInput />
+            <TextInput style={{ height: textareaHeight }}
+                       value={text}
+                       onChangeText={text => this.setState({ text })}
+                       onContentSizeChange={this._onContentSizeChange}
+                       multiline />
+      	</InputScrollView>
+    );
+}
+
+_onContentSizeChange = ({nativeEvent:event}) => {
+    this.setState({ textareaHeight: event.contentSize.height });
+};
+```
 
 
 
