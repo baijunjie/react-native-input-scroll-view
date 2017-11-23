@@ -175,7 +175,7 @@ export default class extends Component {
             newComponent.props = { ...Component.props };
             newComponent.props.children = this._cloneDeepComponents(Component.props.children);
             return newComponent;
-        } else if (Component.props.multiline) {
+        } else if (Component && Component.props && Component.props.multiline) {
             const newComponent = { ...Component };
             newComponent.props = { ...Component.props };
             return this._addMultilineHandle(newComponent);
