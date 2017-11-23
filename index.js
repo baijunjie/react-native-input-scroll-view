@@ -319,14 +319,9 @@ export default class extends Component {
 
         const targetInst = event._targetInst;
         let uiViewClassName;
-        if (Platform.OS === 'ios') {
-            uiViewClassName = event._targetInst.viewConfig.uiViewClassName;
-            return uiViewClassName === 'RCTTextField' || uiViewClassName === 'RCTTextView';
-        } else {
-            return (typeof event._targetInst._currentElement === 'object' &&
-                event._targetInst._currentElement.type.displayName === 'AndroidTextInput') || typeof event._targetInst._currentElement === 'string';
-            
-        }
+        uiViewClassName = targetInst.type || // >= react-native 0.49
+            targetInst.viewConfig.uiViewClassName; // <= react-native 0.48
+        return uiViewClassName === 'RCTTextField' || uiViewClassName === 'RCTTextView';
     };
 
     // 在单行 TextInput 中
