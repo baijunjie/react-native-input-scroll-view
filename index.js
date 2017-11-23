@@ -170,7 +170,7 @@ export default class extends Component {
     _cloneDeepComponents(Component) {
         if (isArray(Component)) {
             return Component.map(subComponent => this._cloneDeepComponents(subComponent));
-        } else if (Component.props.children) {
+        } else if (Component && Component.props && Component.props.children) {
             const newComponent = { ...Component };
             newComponent.props = { ...Component.props };
             newComponent.props.children = this._cloneDeepComponents(Component.props.children);
