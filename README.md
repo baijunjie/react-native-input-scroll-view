@@ -1,4 +1,5 @@
-# react-native-input-scroll-view
+# react-native-input-scroll-view [![npm version](https://badge.fury.io/js/react-native-input-scroll-view.svg)](https://badge.fury.io/js/react-native-input-scroll-view)
+
 Mainly to achieve the following functions：
 
 - When the keyboard pops up, the `TextInput` will automatically adjust to the top of the keyboard.
