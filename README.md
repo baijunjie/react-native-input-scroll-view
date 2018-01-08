@@ -91,7 +91,7 @@ _onContentSizeChange = ({nativeEvent:event}) => {
 
 ## Removing Listeners 
 
-This plugin works by adding listeners to Keyboard. Given this, you have to remove listeners from the keyboard each time you push your screen to another or you will get an error [#15](https://github.com/baijunjie/react-native-input-scroll-view/issues/15). You don't have to do this whe unmounting the screen.
+This plugin works by adding listeners to Keyboard. Given this, you have to remove listeners from the keyboard each time you push your screen to another or you will get an error [#15](https://github.com/baijunjie/react-native-input-scroll-view/issues/15). You don't have to do this when unmounting the screen.
 
 You can remove listeners by adding a reference:
 ```
