@@ -23,10 +23,10 @@ const isIOS = Platform.OS === 'ios';
 let debounce;
 
 if (isIOS) {
-    debounce = function(func, wait) {
+    debounce = function (func, wait) {
         wait = wait || 0;
         let id, count;
-        let action = function(event) {
+        let action = function (event) {
             if (count) {
                 count--;
                 id = requestAnimationFrame(() => action.call(this, event));
@@ -34,17 +34,17 @@ if (isIOS) {
                 func.call(this, event);
             }
         };
-        return function({ ...event }) {
+        return function ({ ...event }) {
             cancelAnimationFrame(id);
             count = wait;
             action.call(this, event);
         };
     };
 } else {
-    debounce = function(func, wait) {
+    debounce = function (func, wait) {
         wait = wait || 0;
         let id, count;
-        let action = function(event) {
+        let action = function (event) {
             if (count) {
                 count--;
                 id = setTimeout(() => action.call(this, event));
@@ -52,7 +52,7 @@ if (isIOS) {
                 func.call(this, event);
             }
         };
-        return function({ ...event }) {
+        return function ({ ...event }) {
             clearTimeout(id);
             count = wait;
             action.call(this, event);
@@ -126,22 +126,22 @@ export default class extends Component {
             <KeyboardAvoidingView behavior={isIOS ? 'padding' : null}>
                 <View style={styles.wrap}>
                     <ScrollComponent ref={this._onRef}
-                                onMomentumScrollEnd={this._onMomentumScrollEnd}
-                                onFocusCapture={this._onFocus} {...otherProps}>
+                        onMomentumScrollEnd={this._onMomentumScrollEnd}
+                        onFocusCapture={this._onFocus} {...otherProps}>
                         <View style={{ marginBottom: contentBottomOffset }}
-                              onStartShouldSetResponderCapture={isIOS ? this._onTouchStart : null}
-                              onResponderMove={this._onTouchMove}
-                              onResponderRelease={this._onTouchEnd}>
+                            onStartShouldSetResponderCapture={isIOS ? this._onTouchStart : null}
+                            onResponderMove={this._onTouchMove}
+                            onResponderRelease={this._onTouchEnd}>
                             {newChildren}
                             <View style={styles.hidden}
-                                  pointerEvents="none">
+                                pointerEvents="none">
                                 {
                                     measureInputVisible &&
                                     <TextInput style={[multilineInputStyle, { width: measureInputWidth }]}
-                                               value={measureInputValue}
-                                               onContentSizeChange={this._onContentSizeChangeMeasureInput}
-                                               editable={false}
-                                               multiline />
+                                        value={measureInputValue}
+                                        onContentSizeChange={this._onContentSizeChangeMeasureInput}
+                                        editable={false}
+                                        multiline />
                                 }
                             </View>
                         </View>
@@ -201,7 +201,7 @@ export default class extends Component {
         Component.props.onChange = (event) => {
             this._onChange(event);
             onChange &&
-            onChange(event);
+                onChange(event);
         };
 
         Component.props.onSelectionChange = ({ ...event }) => {
@@ -213,13 +213,13 @@ export default class extends Component {
                 setTimeout(() => this._onSelectionChange(event));
             }
             onSelectionChange &&
-            onSelectionChange(event);
+                onSelectionChange(event);
         };
 
         Component.props.onContentSizeChange = ({ ...event }) => {
             this._onContentSizeChange(event);
             onContentSizeChange &&
-            onContentSizeChange(event);
+                onContentSizeChange(event);
         };
 
         return Component;
@@ -242,7 +242,7 @@ export default class extends Component {
     // 因为在真机上，当行数增多时，每调整一次 measureInputValue 的值，onContentSizeChange 都会触发多次。
     // 如果不使用防抖函数，那么在 onContentSizeChange 第一次触发时，measureInputVisible 就会被设置为 false，导致无法获取正确的值。
     // 但在模拟器上没有这个问题。
-    _onContentSizeChangeMeasureInput = debounce(({nativeEvent:event}) => {
+    _onContentSizeChangeMeasureInput = debounce(({ nativeEvent: event }) => {
         if (!this._measureCallback) return;
         this._measureCallback(event.contentSize.height);
         this._measureCallback = null;
@@ -265,7 +265,7 @@ export default class extends Component {
         });
     };
 
-    _onMomentumScrollEnd = ({nativeEvent:event}) => {
+    _onMomentumScrollEnd = ({ nativeEvent: event }) => {
         if (!this._keyboardShow) return;
         const contentBottomOffset = Math.max(
             0,
