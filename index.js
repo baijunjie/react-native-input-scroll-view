@@ -14,6 +14,7 @@ import {
     KeyboardAvoidingView,
     Keyboard,
     Platform,
+    Animated
 } from 'react-native';
 import TextInputState from 'react-native/Libraries/Components/TextInput/TextInputState';
 
@@ -67,11 +68,13 @@ export default class extends Component {
             PropTypes.array,
             PropTypes.number,
         ]),
+        useAnimatedScrollView: PropTypes.bool,
     };
 
     static defaultProps = {
         keyboardOffset: 40,
         multilineInputStyle: { fontSize: 17 },
+        useAnimatedScrollView: false,
     };
 
     state = {
@@ -101,6 +104,7 @@ export default class extends Component {
             keyboardOffset,
             multilineInputStyle,
             children,
+            useAnimatedScrollView,
             ...otherProps,
         } = this.props;
 
@@ -113,10 +117,15 @@ export default class extends Component {
 
         const newChildren = this._cloneDeepComponents(children);
 
+        const ScrollComponent =
+            useAnimatedScrollView
+                ? Animated.ScrollView
+                : ScrollView;
+
         return (
             <KeyboardAvoidingView behavior={isIOS ? 'padding' : null}>
                 <View style={styles.wrap}>
-                    <ScrollView ref={this._onRef}
+                    <ScrollComponent ref={this._onRef}
                                 onMomentumScrollEnd={this._onMomentumScrollEnd}
                                 onFocusCapture={this._onFocus} {...otherProps}>
                         <View style={{ marginBottom: contentBottomOffset }}
@@ -136,7 +145,7 @@ export default class extends Component {
                                 }
                             </View>
                         </View>
-                    </ScrollView>
+                    </ScrollComponent>
                 </View>
             </KeyboardAvoidingView>
         );
@@ -241,11 +250,16 @@ export default class extends Component {
     }, 3);
 
     _onRef = root => {
+        const { useAnimatedScrollView } = this.props;
         if (!root) return;
         this._root = root;
 
+        if (useAnimatedScrollView && this._root._component) {
+            this._root = this._root._component;
+        };
+
         setTimeout(() => {
-            root._innerViewRef.measureInWindow((x, y, width, height) => {
+            this._root._innerViewRef.measureInWindow((x, y, width, height) => {
                 this._topOffset = y;
             });
         });
