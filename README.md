@@ -31,8 +31,6 @@ $ yarn add react-native-input-scroll-view
 
 ## Usage
 
-Does not contain multiline `TextInput`
-
 ```jsx
 import InputScrollView from 'react-native-input-scroll-view';
 ...
@@ -103,11 +101,10 @@ this.inputScrollView._removeListener()
 
 | Property | Type | Default | Description |
 |-------------|----------|--------------|----------------------------------------------------------------|
-| children |  | required | Scene root element |
-| `keyboardOffset`   | `integer` | `40` | When automatic adjustment, the cursor relative to the top of the keyboard offset. |
+| `keyboardOffset`   | `number` | `40` | When automatic adjustment, the cursor relative to the top of the keyboard offset. |
 | `multilineInputStyle`     | `Style` | `{ fontSize: 17 }` | If your multiline `TextInput` has a specific style, to ensure that the cursor can be accurately adjusted to the top of the keyboard, this is set as a multiline `TextInput` style, The style attributes that mainly include `fontSize`、`fontFamily`、`lineHeight` etc. affect the position of the cursor. **Be careful not to include `width` and `height`**. |
+| `useAnimatedScrollView`     | `bool` | `false` | Replace regular `ScrollView` component with `Animated.ScrollView` component.  |
 | `...ScrolView.props`     | `props` |  | All props from ScrollView are inherited. Check them here: https://facebook.github.io/react-native/docs/scrollview.html  |
-| `useAnimatedScrollView`     | `bool` |  | Replace regular `ScrollView` component with `Animated.ScrollView` component.  |
 
 
 ## ENV

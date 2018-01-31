@@ -23,10 +23,10 @@ const isIOS = Platform.OS === 'ios';
 let debounce;
 
 if (isIOS) {
-    debounce = function (func, wait) {
+    debounce = function(func, wait) {
         wait = wait || 0;
         let id, count;
-        let action = function (event) {
+        let action = function(event) {
             if (count) {
                 count--;
                 id = requestAnimationFrame(() => action.call(this, event));
@@ -34,17 +34,17 @@ if (isIOS) {
                 func.call(this, event);
             }
         };
-        return function ({ ...event }) {
+        return function({ ...event }) {
             cancelAnimationFrame(id);
             count = wait;
             action.call(this, event);
         };
     };
 } else {
-    debounce = function (func, wait) {
+    debounce = function(func, wait) {
         wait = wait || 0;
         let id, count;
-        let action = function (event) {
+        let action = function(event) {
             if (count) {
                 count--;
                 id = setTimeout(() => action.call(this, event));
@@ -52,7 +52,7 @@ if (isIOS) {
                 func.call(this, event);
             }
         };
-        return function ({ ...event }) {
+        return function({ ...event }) {
             clearTimeout(id);
             count = wait;
             action.call(this, event);
@@ -117,31 +117,28 @@ export default class extends Component {
 
         const newChildren = this._cloneDeepComponents(children);
 
-        const ScrollComponent =
-            useAnimatedScrollView
-                ? Animated.ScrollView
-                : ScrollView;
+        const ScrollComponent = useAnimatedScrollView ? Animated.ScrollView : ScrollView;
 
         return (
             <KeyboardAvoidingView behavior={isIOS ? 'padding' : null}>
                 <View style={styles.wrap}>
                     <ScrollComponent ref={this._onRef}
-                        onMomentumScrollEnd={this._onMomentumScrollEnd}
-                        onFocusCapture={this._onFocus} {...otherProps}>
+                                     onMomentumScrollEnd={this._onMomentumScrollEnd}
+                                     onFocusCapture={this._onFocus} {...otherProps}>
                         <View style={{ marginBottom: contentBottomOffset }}
-                            onStartShouldSetResponderCapture={isIOS ? this._onTouchStart : null}
-                            onResponderMove={this._onTouchMove}
-                            onResponderRelease={this._onTouchEnd}>
+                              onStartShouldSetResponderCapture={isIOS ? this._onTouchStart : null}
+                              onResponderMove={this._onTouchMove}
+                              onResponderRelease={this._onTouchEnd}>
                             {newChildren}
                             <View style={styles.hidden}
-                                pointerEvents="none">
+                                  pointerEvents="none">
                                 {
                                     measureInputVisible &&
                                     <TextInput style={[multilineInputStyle, { width: measureInputWidth }]}
-                                        value={measureInputValue}
-                                        onContentSizeChange={this._onContentSizeChangeMeasureInput}
-                                        editable={false}
-                                        multiline />
+                                               value={measureInputValue}
+                                               onContentSizeChange={this._onContentSizeChangeMeasureInput}
+                                               editable={false}
+                                               multiline />
                                 }
                             </View>
                         </View>
