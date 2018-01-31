@@ -31,8 +31,6 @@ $ yarn add react-native-input-scroll-view
 
 ## Usage
 
-Does not contain multiline `TextInput`
-
 ```jsx
 import InputScrollView from 'react-native-input-scroll-view';
 ...
