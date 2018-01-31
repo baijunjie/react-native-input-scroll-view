@@ -306,7 +306,29 @@ export default class extends Component {
 
     _scrollToKeyboard = (target, offset) => {
         const toKeyboardOffset = this._topOffset + this.props.keyboardOffset - offset;
-        this._root.scrollResponderScrollNativeHandleToKeyboard(target, toKeyboardOffset, true);
+        
+        const scrollResponder = this._getScrollResponder();
+
+        if (!target || !scrollResponder) {
+            return;
+        };
+
+        UIManager.viewIsDescendantOf(
+            target,
+            scrollResponder.getInnerViewNode(),
+            (isAncestor) => {
+                if (isAncestor) {
+                    this._root.scrollResponderScrollNativeHandleToKeyboard(target, toKeyboardOffset, true);
+                };
+            }
+        );
+    };
+
+    _getScrollResponder = () => {
+        return (
+            this._root &&
+            this._root.getScrollResponder()
+        );
     };
 
     _onKeyboardShow = () => {
