@@ -15,8 +15,8 @@ import {
     Keyboard,
     Platform,
     Animated,
+    UIManager
 } from 'react-native';
-import TextInputState from 'react-native/Libraries/Components/TextInput/TextInputState';
 
 const isIOS = Platform.OS === 'ios';
 
@@ -277,7 +277,7 @@ export default class extends Component {
     _scrollToKeyboardRequest = () => {
         if (!this._keyboardShow) return;
 
-        const curFocusTarget = TextInputState.currentlyFocusedField();
+        const curFocusTarget = TextInput.State.currentlyFocusedField();
         if (!curFocusTarget) return;
 
         const { text, selectionEnd, width, height } = this._getInputInfo(curFocusTarget);
@@ -303,7 +303,29 @@ export default class extends Component {
 
     _scrollToKeyboard = (target, offset) => {
         const toKeyboardOffset = this._topOffset + this.props.keyboardOffset - offset;
-        this._root.scrollResponderScrollNativeHandleToKeyboard(target, toKeyboardOffset, true);
+
+        const scrollResponder = this._getScrollResponder();
+
+        if (!target || !scrollResponder) {
+            return;
+        };
+
+        UIManager.viewIsDescendantOf(
+            target,
+            scrollResponder.getInnerViewNode(),
+            (isAncestor) => {
+                if (isAncestor) {
+                    this._root.scrollResponderScrollNativeHandleToKeyboard(target, toKeyboardOffset, true);
+                };
+            }
+        );
+    };
+
+    _getScrollResponder = () => {
+        return (
+            this._root &&
+            this._root.getScrollResponder()
+        );
     };
 
     _onKeyboardShow = () => {
@@ -326,7 +348,7 @@ export default class extends Component {
     // 这个方法是为了防止 ScrollView 在滑动结束后触发 TextInput 的 focus 事件
     _onTouchStart = ({ ...event }) => {
         const target = event.target || event.currentTarget;
-        if (target === TextInputState.currentlyFocusedField()) return false;
+        if (target === TextInput.State.currentlyFocusedField()) return false;
 
         const targetInst = event._targetInst;
         let uiViewClassName;
@@ -343,12 +365,12 @@ export default class extends Component {
     _onFocus = ({ ...event }) => {
         // 当 onStartShouldSetResponderCapture 返回 true 时
         // 被激活的 TextInput 无法使用 Keyboard.dismiss() 来收起键盘
-        // TextInputState.currentlyFocusedField() 也无法获取当前焦点ID
+        // TextInput.State.currentlyFocusedField() 也无法获取当前焦点ID
         // 原因可能是系统并未判定 TextInput 获取焦点，这可能是一个 bug
         // 通常需要在 onStartShouldSetResponderCapture 返回 false 的情况下再点击一次 TextInput 才能恢复正常
         // 所以这里手动再设置一次焦点
         const target = event.target || event.currentTarget;
-        TextInputState.focusTextInput(target);
+        TextInput.State.focusTextInput(target);
 
         const inputInfo = this._getInputInfo(target);
         const multiline = getProps(event._targetInst).multiline;
