@@ -15,7 +15,7 @@ import {
     Keyboard,
     Platform,
     Animated,
-    UIManager
+    UIManager,
 } from 'react-native';
 
 const isIOS = Platform.OS === 'ios';
@@ -280,22 +280,33 @@ export default class extends Component {
         const curFocusTarget = TextInput.State.currentlyFocusedField();
         if (!curFocusTarget) return;
 
-        const { text, selectionEnd, width, height } = this._getInputInfo(curFocusTarget);
-        const cursorAtLastLine = !text ||
-            selectionEnd === undefined ||
-            text.length === selectionEnd;
+        const scrollResponder = this._root && this._root.getScrollResponder();
+        if (!scrollResponder) return;
 
-        if (cursorAtLastLine) {
-            return this._scrollToKeyboard(curFocusTarget, 0);
-        }
+        UIManager.viewIsDescendantOf(
+            curFocusTarget,
+            scrollResponder.getInnerViewNode(),
+            (isAncestor) => {
+                if (!isAncestor) return;
 
-        this._measureCursorPosition(
-            text.substr(0, selectionEnd),
-            width,
-            cursorRelativeTopOffset => {
-                this._scrollToKeyboard(
-                    curFocusTarget,
-                    Math.max(0, height - cursorRelativeTopOffset)
+                const { text, selectionEnd, width, height } = this._getInputInfo(curFocusTarget);
+                const cursorAtLastLine = !text ||
+                    selectionEnd === undefined ||
+                    text.length === selectionEnd;
+
+                if (cursorAtLastLine) {
+                    return this._scrollToKeyboard(curFocusTarget, 0);
+                }
+
+                this._measureCursorPosition(
+                    text.substr(0, selectionEnd),
+                    width,
+                    cursorRelativeTopOffset => {
+                        this._scrollToKeyboard(
+                            curFocusTarget,
+                            Math.max(0, height - cursorRelativeTopOffset)
+                        );
+                    }
                 );
             }
         );
@@ -303,29 +314,7 @@ export default class extends Component {
 
     _scrollToKeyboard = (target, offset) => {
         const toKeyboardOffset = this._topOffset + this.props.keyboardOffset - offset;
-
-        const scrollResponder = this._getScrollResponder();
-
-        if (!target || !scrollResponder) {
-            return;
-        };
-
-        UIManager.viewIsDescendantOf(
-            target,
-            scrollResponder.getInnerViewNode(),
-            (isAncestor) => {
-                if (isAncestor) {
-                    this._root.scrollResponderScrollNativeHandleToKeyboard(target, toKeyboardOffset, true);
-                };
-            }
-        );
-    };
-
-    _getScrollResponder = () => {
-        return (
-            this._root &&
-            this._root.getScrollResponder()
-        );
+        this._root.scrollResponderScrollNativeHandleToKeyboard(target, toKeyboardOffset, true);
     };
 
     _onKeyboardShow = () => {
