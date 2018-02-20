@@ -120,7 +120,7 @@ export default class extends Component {
         const ScrollComponent = useAnimatedScrollView ? Animated.ScrollView : ScrollView;
 
         return (
-            <KeyboardAvoidingView behavior={isIOS ? 'padding' : null}>
+            <KeyboardAvoidingView behavior={isIOS ? 'padding' : null} style={this.props.style}>
                 <View style={styles.wrap}>
                     <ScrollComponent ref={this._onRef}
                                      onMomentumScrollEnd={this._onMomentumScrollEnd}
