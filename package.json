@@ -20,5 +20,7 @@
   "dependencies": {
     "prop-types": "^15.5.10"
   },
-  "files": []
+  "files": [
+    "index.d.ts"
+  ]
 }
