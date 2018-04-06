@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ScrollViewProperties, TextStyle } from 'react-native';
+import { ScrollViewProperties, TextStyle, ScrollView } from 'react-native';
 
 export interface InputScrollViewProps extends ScrollViewProperties {
   readonly keyboardOffset?: number;
@@ -7,6 +7,9 @@ export interface InputScrollViewProps extends ScrollViewProperties {
   readonly useAnimatedScrollView?: boolean;
 }
 
-declare class InputScrollView extends React.Component<InputScrollViewProps> { }
+declare class InputScrollView extends React.Component<InputScrollViewProps> {
+  public scrollTo: ScrollView['scrollTo'];
+  public scrollToEnd: ScrollView['scrollToEnd'];
+}
 
 export default InputScrollView;
