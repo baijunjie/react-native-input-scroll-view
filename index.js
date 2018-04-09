@@ -256,6 +256,7 @@ export default class extends Component {
         };
 
         setTimeout(() => {
+            this._root._innerViewRef &&
             this._root._innerViewRef.measureInWindow((x, y, width, height) => {
                 this._topOffset = y;
             });
