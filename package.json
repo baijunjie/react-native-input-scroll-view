@@ -3,6 +3,7 @@
   "version": "1.6.4",
   "description": "Perfect TextInput ScrollView",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -19,5 +20,7 @@
   "dependencies": {
     "prop-types": "^15.5.10"
   },
-  "files": []
+  "files": [
+    "index.d.ts"
+  ]
 }
