@@ -290,25 +290,28 @@ export default class extends Component {
             (isAncestor) => {
                 if (!isAncestor) return;
 
-                const { text, selectionEnd, width, height } = this._getInputInfo(curFocusTarget);
-                const cursorAtLastLine = !text ||
-                    selectionEnd === undefined ||
-                    text.length === selectionEnd;
+                UIManager.measure(curFocusTarget, (originX, originY, width, height, pageX, pageY) => {
+                  const { text, selectionEnd} = this._getInputInfo(curFocusTarget);
+                  const cursorAtLastLine = !text ||
+                      selectionEnd === undefined ||
+                      text.length === selectionEnd;
 
-                if (cursorAtLastLine) {
-                    return this._scrollToKeyboard(curFocusTarget, 0);
-                }
+                  if (cursorAtLastLine) {
+                      return this._scrollToKeyboard(curFocusTarget, 0);
+                  }
 
-                this._measureCursorPosition(
-                    text.substr(0, selectionEnd),
-                    width,
-                    cursorRelativeTopOffset => {
-                        this._scrollToKeyboard(
-                            curFocusTarget,
-                            Math.max(0, height - cursorRelativeTopOffset)
-                        );
-                    }
-                );
+                  this._measureCursorPosition(
+                      text.substr(0, selectionEnd),
+                      width,
+                      cursorRelativeTopOffset => {
+                          this._scrollToKeyboard(
+                              curFocusTarget,
+                              Math.max(0, height - cursorRelativeTopOffset)
+                          );
+                      }
+                  );
+                })
+
             }
         );
     };
