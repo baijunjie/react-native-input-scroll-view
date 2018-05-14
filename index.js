@@ -366,9 +366,11 @@ export default class extends Component {
         const multiline = getProps(event._targetInst).multiline;
 
         if (multiline) {
-            if (inputInfo.text === undefined) {
-                inputInfo.text = getProps(event._targetInst).value;
-            }
+          if (inputInfo.text === undefined) {
+              inputInfo.text = getProps(event._targetInst).value;
+          }else if(getProps(event._targetInst).defaultValue !== undefined){
+              inputINfo.text = getProps(event._targetInst).defaultValue;
+          }
 
             if (!isIOS) return;
 
