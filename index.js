@@ -73,7 +73,9 @@ export default class extends Component {
 
     static defaultProps = {
         keyboardOffset: 40,
-        multilineInputStyle: { fontSize: 17 },
+        multilineInputStyle: {
+          //fontSize: 17
+        },
         useAnimatedScrollView: false,
     };
 
@@ -290,25 +292,28 @@ export default class extends Component {
             (isAncestor) => {
                 if (!isAncestor) return;
 
-                const { text, selectionEnd, width, height } = this._getInputInfo(curFocusTarget);
-                const cursorAtLastLine = !text ||
-                    selectionEnd === undefined ||
-                    text.length === selectionEnd;
+                UIManager.measure(curFocusTarget, (originX, originY, width, height, pageX, pageY) => {
+                  const { text, selectionEnd} = this._getInputInfo(curFocusTarget);
+                  const cursorAtLastLine = !text ||
+                      selectionEnd === undefined ||
+                      text.length === selectionEnd;
 
-                if (cursorAtLastLine) {
-                    return this._scrollToKeyboard(curFocusTarget, 0);
-                }
+                  if (cursorAtLastLine) {
+                      return this._scrollToKeyboard(curFocusTarget, 0);
+                  }
 
-                this._measureCursorPosition(
-                    text.substr(0, selectionEnd),
-                    width,
-                    cursorRelativeTopOffset => {
-                        this._scrollToKeyboard(
-                            curFocusTarget,
-                            Math.max(0, height - cursorRelativeTopOffset)
-                        );
-                    }
-                );
+                  this._measureCursorPosition(
+                      text.substr(0, selectionEnd),
+                      width,
+                      cursorRelativeTopOffset => {
+                          this._scrollToKeyboard(
+                              curFocusTarget,
+                              Math.max(0, height - cursorRelativeTopOffset)
+                          );
+                      }
+                  );
+                })
+
             }
         );
     };
@@ -367,7 +372,11 @@ export default class extends Component {
 
         if (multiline) {
             if (inputInfo.text === undefined) {
-                inputInfo.text = getProps(event._targetInst).value;
+                if(getProps(event._targetInst).value !== undefined){
+                  inputInfo.text = getProps(event._targetInst).value;
+                }else if(getProps(event._targetInst).defaultValue !== undefined){
+                    inputInfo.text = getProps(event._targetInst).defaultValue;
+                }
             }
 
             if (!isIOS) return;
