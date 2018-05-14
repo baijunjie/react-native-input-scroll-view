@@ -73,7 +73,9 @@ export default class extends Component {
 
     static defaultProps = {
         keyboardOffset: 40,
-        multilineInputStyle: { fontSize: 17 },
+        multilineInputStyle: {
+          //fontSize: 17
+        },
         useAnimatedScrollView: false,
     };
 
