@@ -73,7 +73,7 @@ export default class extends Component {
 
     static defaultProps = {
         keyboardOffset: 40,
-        multilineInputStyle: { fontSize: 17 },
+        multilineInputStyle: null,
         useAnimatedScrollView: false,
     };
 
@@ -367,7 +367,8 @@ export default class extends Component {
 
         if (multiline) {
             if (inputInfo.text === undefined) {
-                inputInfo.text = getProps(event._targetInst).value;
+                const props = getProps(event._targetInst);
+                inputInfo.text = props.value || props.defaultValue;
             }
 
             if (!isIOS) return;
