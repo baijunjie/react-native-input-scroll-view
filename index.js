@@ -105,7 +105,7 @@ export default class extends Component {
             multilineInputStyle,
             children,
             useAnimatedScrollView,
-            ...otherProps,
+            ...otherProps
         } = this.props;
 
         const {
