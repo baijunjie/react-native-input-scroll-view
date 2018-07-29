@@ -44,7 +44,7 @@ render() {
         <InputScrollView>
             <TextInput />
             <TextInput />
-            <TextInput value={this.state.text}
+            <TextInput value={text}
                        onChangeText={text => this.setState({ text })}
                        multiline />
       	</InputScrollView>
