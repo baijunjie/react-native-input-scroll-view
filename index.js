@@ -17,7 +17,7 @@ import {
     Animated,
     UIManager,
 } from 'react-native';
-import clone from 'lodash/clone';
+import cloneDeep from 'lodash/cloneDeep';
 
 const isIOS = Platform.OS === 'ios';
 
@@ -36,7 +36,7 @@ if (isIOS) {
             }
         };
         return function(event) {
-            const e = clone(event);
+            const e = cloneDeep(event);
             cancelAnimationFrame(id);
             count = wait;
             action.call(this, e);
@@ -55,7 +55,7 @@ if (isIOS) {
             }
         };
         return function(event) {
-            const e = clone(event);
+            const e = cloneDeep(event);
             clearTimeout(id);
             count = wait;
             action.call(this, e);
@@ -207,7 +207,7 @@ export default class extends Component {
         };
 
         Component.props.onSelectionChange = event => {
-            const e = clone(event);
+            const e = cloneDeep(event);
             if (isIOS) {
                 // 确保处理代码在 onChange 之后执行
                 // release 版本必须使用 requestAnimationFrame
@@ -216,7 +216,7 @@ export default class extends Component {
                 setTimeout(() => this._onSelectionChange(e));
             }
             onSelectionChange &&
-                onSelectionChange(event);
+            onSelectionChange(event);
         };
 
         // 使用防抖函数有两个目的
@@ -224,8 +224,7 @@ export default class extends Component {
         // - 短时间内不会重复执行 onContentSizeChange，因为当一次粘贴进许多行文本时，可能会连续触发多次 onContentSizeChange
         Component.props.onContentSizeChange = debounce(event => {
             this._onContentSizeChange(event);
-            onContentSizeChange &&
-                onContentSizeChange(event);
+            onContentSizeChange && onContentSizeChange(event);
         }, 2);
 
         return Component;
