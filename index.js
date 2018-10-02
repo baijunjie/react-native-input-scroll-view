@@ -141,7 +141,7 @@ export default class extends Component {
                                     measureInputVisible &&
                                     <TextInput style={[multilineInputStyle, { width: measureInputWidth }]}
                                                value={measureInputValue}
-                                               onContentSizeChange={this._onContentSizeChangeMeasureInput}
+                                               onContentSizeChange={event => this._onContentSizeChangeMeasureInput(clone(event))}
                                                editable={false}
                                                multiline />
                                 }
@@ -195,6 +195,11 @@ export default class extends Component {
         }
     }
 
+    _onContentSizeChangeDebounce = debounce((event, onContentSizeChange) => {
+        this._onContentSizeChange(event);
+        onContentSizeChange && onContentSizeChange(event);
+    }, 2);
+
     _addMultilineHandle(Component) {
         const onChange = Component.props.onChange;
         const onSelectionChange = Component.props.onSelectionChange;
@@ -222,11 +227,10 @@ export default class extends Component {
         // 使用防抖函数有两个目的
         // - 确保 scrollToKeyboardRequest 在 onSelectionChange 之后执行
         // - 短时间内不会重复执行 onContentSizeChange，因为当一次粘贴进许多行文本时，可能会连续触发多次 onContentSizeChange
-        Component.props.onContentSizeChange = debounce(event => {
-            this._onContentSizeChange(event);
-            onContentSizeChange &&
-                onContentSizeChange(event);
-        }, 2);
+        Component.props.onContentSizeChange = event => {
+            const e = clone(event);
+            this._onContentSizeChangeDebounce(e, onContentSizeChange);
+        };
 
         return Component;
     }
