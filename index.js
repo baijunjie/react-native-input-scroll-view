@@ -141,7 +141,7 @@ export default class extends Component {
                                     measureInputVisible &&
                                     <TextInput style={[multilineInputStyle, { width: measureInputWidth }]}
                                                value={measureInputValue}
-                                               onContentSizeChange={event => this._onContentSizeChangeMeasureInput(clone(event))}
+                                               onContentSizeChange={this._onContentSizeChangeMeasureInput}
                                                editable={false}
                                                multiline />
                                 }
