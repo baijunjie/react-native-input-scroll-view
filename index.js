@@ -428,6 +428,7 @@ export default class extends Component {
     };
 
     _onContentSizeChange = event => {
+        if (!event.nativeEvent) return; // Fixed: https://github.com/baijunjie/react-native-input-scroll-view/issues/42
         const target = event.target || event.currentTarget;
         const inputInfo = this._getInputInfo(target);
         inputInfo.width = event.nativeEvent.contentSize.width;
