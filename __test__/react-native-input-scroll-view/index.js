@@ -17,7 +17,7 @@ import {
     Animated,
     UIManager,
 } from 'react-native';
-import clone from 'lodash/clone';
+import cloneDeep from 'lodash/cloneDeep';
 
 const isIOS = Platform.OS === 'ios';
 
@@ -36,7 +36,7 @@ if (isIOS) {
             }
         };
         return function(event) {
-            const e = clone(event);
+            const e = cloneDeep(event);
             cancelAnimationFrame(id);
             count = wait;
             action.call(this, e);
@@ -55,7 +55,7 @@ if (isIOS) {
             }
         };
         return function(event) {
-            const e = clone(event);
+            const e = cloneDeep(event);
             clearTimeout(id);
             count = wait;
             action.call(this, e);
@@ -131,9 +131,7 @@ export default class extends Component {
                                      onFocus={this._onFocus}
                                      onBlur={this._onBlur} {...otherProps}>
                         <View style={{ marginBottom: contentBottomOffset }}
-                              onStartShouldSetResponderCapture={isIOS ? this._onTouchStart : null}
-                              onResponderMove={this._onTouchMove}
-                              onResponderRelease={this._onTouchEnd}>
+                              onStartShouldSetResponderCapture={isIOS ? this._onTouchStart : null}>
                             {newChildren}
                             <View style={styles.hidden}
                                   pointerEvents="none">
@@ -179,7 +177,7 @@ export default class extends Component {
     }
 
     _cloneDeepComponents(Component) {
-        if (isArray(Component)) {
+        if (Component instanceof Array) {
             return Component.map(subComponent => this._cloneDeepComponents(subComponent));
         } else if (Component && Component.props && Component.props.children) {
             const newComponent = { ...Component };
@@ -202,12 +200,11 @@ export default class extends Component {
 
         Component.props.onChange = event => {
             this._onChange(event);
-            onChange &&
-                onChange(event);
+            onChange && onChange(event);
         };
 
         Component.props.onSelectionChange = event => {
-            const e = clone(event);
+            const e = cloneDeep(event);
             if (isIOS) {
                 // 确保处理代码在 onChange 之后执行
                 // release 版本必须使用 requestAnimationFrame
@@ -216,16 +213,17 @@ export default class extends Component {
                 setTimeout(() => this._onSelectionChange(e));
             }
             onSelectionChange &&
-                onSelectionChange(event);
+            onSelectionChange(event);
         };
 
-        // 使用防抖函数有两个目的
-        // - 确保 scrollToKeyboardRequest 在 onSelectionChange 之后执行
-        // - 短时间内不会重复执行 onContentSizeChange，因为当一次粘贴进许多行文本时，可能会连续触发多次 onContentSizeChange
+        /**
+         * 使用防抖函数有两个目的
+         * - 确保 scrollToKeyboardRequest 在 onSelectionChange 之后执行
+         * - 短时间内不会重复执行 onContentSizeChange，因为当一次粘贴进许多行文本时，可能会连续触发多次 onContentSizeChange
+         */
         Component.props.onContentSizeChange = debounce(event => {
             this._onContentSizeChange(event);
-            onContentSizeChange &&
-                onContentSizeChange(event);
+            onContentSizeChange && onContentSizeChange(event);
         }, 2);
 
         return Component;
@@ -244,10 +242,12 @@ export default class extends Component {
         });
     }
 
-    // 这里必须使用防抖函数
-    // 因为在真机上，当行数增多时，每调整一次 measureInputValue 的值，onContentSizeChange 都会触发多次。
-    // 如果不使用防抖函数，那么在 onContentSizeChange 第一次触发时，measureInputVisible 就会被设置为 false，导致无法获取正确的值。
-    // 但在模拟器上没有这个问题。
+    /**
+     * 这里必须使用防抖函数
+     * 因为在真机上，当行数增多时，每调整一次 measureInputValue 的值，onContentSizeChange 都会触发多次。
+     * 如果不使用防抖函数，那么在 onContentSizeChange 第一次触发时，measureInputVisible 就会被设置为 false，导致无法获取正确的值。
+     * 但在模拟器上没有这个问题。
+     */
     _onContentSizeChangeMeasureInput = debounce(event => {
         if (!this._measureCallback) return;
         this._measureCallback(event.nativeEvent.contentSize.height);
@@ -328,6 +328,9 @@ export default class extends Component {
     };
 
     _onKeyboardShow = () => {
+        // 在 react-native v0.57 版本中（也可能更早），键盘弹出时，该回调会连续执行3次
+        // 导致 scrollResponderScrollNativeHandleToKeyboard 工作不正常
+        if (this._keyboardShow) return;
         this._keyboardShow = true;
         this._scrollToKeyboardRequest();
     };
@@ -344,32 +347,36 @@ export default class extends Component {
         });
     };
 
-    // 这个方法是为了防止 ScrollView 在滑动结束后触发 TextInput 的 focus 事件
+    /**
+     * 这个方法是为了防止 ScrollView 在滑动结束后触发 TextInput 的 focus 事件
+     */
     _onTouchStart = event => {
         const target = event.target || event.currentTarget;
         if (target === this._curFocus) return false;
 
         const targetInst = event._targetInst;
-        let uiViewClassName;
-        uiViewClassName = targetInst.type || // >= react-native 0.49
+        const uiViewClassName = targetInst.type || // >= react-native 0.49
             targetInst.viewConfig.uiViewClassName; // <= react-native 0.48
-        return uiViewClassName === 'RCTTextField' || uiViewClassName === 'RCTTextView';
+        return uiViewClassName === 'RCTTextField' || uiViewClassName === 'RCTTextView' || uiViewClassName === 'RCTMultilineTextInputView';
     };
 
-    // 在单行 TextInput 中
-    // onFocus 在 keyboardWillShow 与 keyboardDidShow 之前触发
-    // 在多行 TextInput 中
-    // onFocus 在 keyboardDidShow 之前触发
-    // onFocus 在 keyboardWillShow 之后触发
+    /**
+     * 在单行 TextInput 中
+     * onFocus 在 keyboardWillShow 与 keyboardDidShow 之前触发
+     * 在多行 TextInput 中
+     * onFocus 在 keyboardDidShow 之前触发
+     * onFocus 在 keyboardWillShow 之后触发
+     */
     _onFocus = event => {
+        const target = event.target || event.currentTarget;
+        this._curFocus = target;
+
         // 当 onStartShouldSetResponderCapture 返回 true 时
         // 被激活的 TextInput 无法使用 Keyboard.dismiss() 来收起键盘
         // TextInput.State.currentlyFocusedField() 也无法获取当前焦点ID
         // 原因可能是系统并未判定 TextInput 获取焦点，这可能是一个 bug
         // 通常需要在 onStartShouldSetResponderCapture 返回 false 的情况下再点击一次 TextInput 才能恢复正常
         // 所以这里手动再设置一次焦点
-        const target = event.target || event.currentTarget;
-        this._curFocus = target;
         focus(target);
 
         const inputInfo = this._getInputInfo(target);
@@ -401,21 +408,32 @@ export default class extends Component {
         if (this._curFocus === target) this._curFocus = null;
     }
 
-    // onChange 在 onContentSizeChange 之前触发
-    // onChange 在 onSelectionChange 之后触发
+    /**
+     * onChange 在 onContentSizeChange 之前触发
+     * onChange 在 onSelectionChange 之后触发
+     */
     _onChange = event => {
         const target = event.target || event.currentTarget;
         const inputInfo = this._getInputInfo(target);
         inputInfo.text = event.nativeEvent.text;
     }
 
-    // onSelectionChange 在 keyboardDidShow 之前触发
-    // onSelectionChange 在 onContentSizeChange 之前触发
-    // onSelectionChange 在 onFocus 之后触发
-    _onSelectionChange = event => {
+    /**
+     * onSelectionChange 在 keyboardDidShow 之前触发
+     * onSelectionChange 在 onContentSizeChange 之前触发
+     * onSelectionChange 在 onFocus 之后触发
+     *
+     * 在 react-native v0.55 版本中（也可能更早），_onSelectionChange 会连续触发
+     * 在多行输入框中，如果选中的是非结尾行，那么多次触发时 event.nativeEvent.selection.end 的值可能会变为文本最后一个字符的 index
+     * 这将导致最终调整位置不正确
+     * 因此，这里需要使用防抖函数来避开回调连续的执行
+     */
+    _onSelectionChange = debounce(event => {
         const target = event.target || event.currentTarget;
         const inputInfo = this._getInputInfo(target);
+
         inputInfo.selectionEnd = event.nativeEvent.selection.end;
+
         if (inputInfo.text === undefined) {
             inputInfo.text = getProps(event._targetInst).value;
         }
@@ -426,9 +444,10 @@ export default class extends Component {
             inputInfo.onFocusRequireScroll = false;
             this._scrollToKeyboardRequest();
         }
-    };
+    }, 1);
 
     _onContentSizeChange = event => {
+        if (!event.nativeEvent) return; // Fixed: https://github.com/baijunjie/react-native-input-scroll-view/issues/42
         const target = event.target || event.currentTarget;
         const inputInfo = this._getInputInfo(target);
         inputInfo.width = event.nativeEvent.contentSize.width;
@@ -443,6 +462,8 @@ export default class extends Component {
 function focus(targetTag) {
     if (isIOS) {
         UIManager.focus(targetTag);
+        // 在 react-native v0.57 版本中（也可能更早），UIManager.focus 不再有效
+        TextInput.State && TextInput.State.focusTextInput(targetTag);
     } else {
         UIManager.dispatchViewManagerCommand(
             targetTag,
@@ -455,10 +476,6 @@ function focus(targetTag) {
 function getProps(targetNode) {
     return targetNode.memoizedProps || // >= react-native 0.49
         targetNode._currentElement.props; // <= react-native 0.48
-}
-
-function isArray(arr) {
-    return Object.prototype.toString.call(arr) === '[object Array]';
 }
 
 const styles = StyleSheet.create({
