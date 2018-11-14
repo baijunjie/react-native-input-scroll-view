@@ -413,6 +413,7 @@ export default class extends Component {
      * onChange 在 onSelectionChange 之后触发
      */
     _onChange = event => {
+        if (!event.nativeEvent) return; // Fixed: https://github.com/baijunjie/react-native-input-scroll-view/issues/44
         const target = event.target || event.currentTarget;
         const inputInfo = this._getInputInfo(target);
         inputInfo.text = event.nativeEvent.text;
