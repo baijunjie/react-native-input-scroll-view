@@ -4,7 +4,7 @@
  * @license MIT
  */
 
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import {
     StyleSheet,
@@ -63,7 +63,7 @@ if (isIOS) {
     };
 }
 
-export default class extends Component {
+export default class extends PureComponent {
     static propTypes = {
         keyboardOffset: PropTypes.number,
         multilineInputStyle: PropTypes.oneOfType([
@@ -84,7 +84,6 @@ export default class extends Component {
         measureInputVisible: false,
         measureInputValue: '',
         measureInputWidth: 0,
-        contentBottomOffset: 0,
     };
 
     componentWillMount() {
@@ -116,7 +115,6 @@ export default class extends Component {
             measureInputVisible,
             measureInputValue,
             measureInputWidth,
-            contentBottomOffset,
         } = this.state;
 
         const newChildren = this._cloneDeepComponents(children);
@@ -127,11 +125,9 @@ export default class extends Component {
             <KeyboardAvoidingView behavior={isIOS ? 'padding' : null}>
                 <View style={styles.wrap}>
                     <ScrollComponent ref={this._onRef}
-                                     onMomentumScrollEnd={this._onMomentumScrollEnd}
                                      onFocus={this._onFocus}
                                      onBlur={this._onBlur} {...otherProps}>
-                        <View style={{ marginBottom: contentBottomOffset }}
-                              onStartShouldSetResponderCapture={isIOS ? this._onTouchStart : null}>
+                        <View onStartShouldSetResponderCapture={isIOS ? this._onTouchStart : null}>
                             {newChildren}
                             <View style={styles.hidden}
                                   pointerEvents="none">
@@ -272,18 +268,6 @@ export default class extends Component {
         });
     };
 
-    _onMomentumScrollEnd = event => {
-        if (!this._keyboardShow) return;
-        const contentBottomOffset = Math.max(
-            0,
-            this.state.contentBottomOffset +
-            event.nativeEvent.layoutMeasurement.height + // layoutMeasurement 可视区域的大小
-            event.nativeEvent.contentOffset.y -
-            event.nativeEvent.contentSize.height
-        );
-        this.setState({ contentBottomOffset });
-    };
-
     _scrollToKeyboardRequest = () => {
         if (!this._keyboardShow) return;
 
@@ -337,14 +321,6 @@ export default class extends Component {
 
     _onKeyboardHide = () => {
         this._keyboardShow = false;
-        let atBottom = !!this.state.contentBottomOffset;
-        this.setState({ contentBottomOffset: 0 }, () => {
-            if (atBottom) {
-                setTimeout(() => {
-                    this._root.scrollToEnd({ animated: true });
-                });
-            }
-        });
     };
 
     /**
