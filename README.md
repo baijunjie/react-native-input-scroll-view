@@ -13,6 +13,7 @@ Mainly to achieve the following functions：
 <img src="https://github.com/baijunjie/react-native-input-scroll-view/blob/master/images/demo.android.gif" width="240">
 
 
+
 ## Installation
 
 npm
@@ -54,9 +55,13 @@ render() {
 
 **Note that if the cursor is to be correctly adjusted to the top of the keyboard, you must bind `value` to `TextInput`.**
 
+
+
 ## Multiline TextInput in the Android
 
-Because in Android, the height of the Multiline `TextInput` cannot be changed according to its content, so we need to add additional processing code
+**If your ReactNative version is on or above `v0.57`, skip this section.**
+
+Before a  certain version of ReactNative, multiline `TextInput` height on an Android device could not change properly based on its content, so we need to add additional processing code
 
 ```jsx
 import InputScrollView from 'react-native-input-scroll-view';
@@ -87,6 +92,8 @@ _onContentSizeChange = ({nativeEvent:event}) => {
 };
 ```
 
+
+
 ## Props
 
 | Property                | Type     | Default | Description                              |
@@ -95,6 +102,7 @@ _onContentSizeChange = ({nativeEvent:event}) => {
 | `multilineInputStyle`   | `Style`  | `null`  | If your multiline `TextInput` has a specific style, to ensure that the cursor can be accurately adjusted to the top of the keyboard, this is set as a multiline `TextInput` style, The style attributes that mainly include `fontSize`、`fontFamily`、`lineHeight` etc. affect the position of the cursor. **Be careful not to include `width` and `height`**. |
 | `useAnimatedScrollView` | `bool`   | `false` | Replace regular `ScrollView` component with `Animated.ScrollView` component. |
 | `...ScrolView.props`    | `props`  |         | All props from ScrollView are inherited. Check them here: https://facebook.github.io/react-native/docs/scrollview.html |
+
 
 
 ## ENV
