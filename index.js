@@ -72,12 +72,14 @@ export default class extends PureComponent {
             PropTypes.number,
         ]),
         useAnimatedScrollView: PropTypes.bool,
+        keyboardAvoidingViewProps: PropTypes.object
     };
 
     static defaultProps = {
         keyboardOffset: 40,
         multilineInputStyle: null,
         useAnimatedScrollView: false,
+        keyboardAvoidingViewProps: null
     };
 
     state = {
@@ -106,10 +108,13 @@ export default class extends PureComponent {
         const {
             keyboardOffset,
             multilineInputStyle,
-            children,
             useAnimatedScrollView,
+            keyboardAvoidingViewProps,
+            children,
             ...otherProps
         } = this.props;
+
+        const kavProps = Object.assign({ behavior: isIOS ? 'padding' : null }, keyboardAvoidingViewProps);
 
         const {
             measureInputVisible,
@@ -122,7 +127,7 @@ export default class extends PureComponent {
         const ScrollComponent = useAnimatedScrollView ? Animated.ScrollView : ScrollView;
 
         return (
-            <KeyboardAvoidingView behavior={isIOS ? 'padding' : null}>
+            <KeyboardAvoidingView {...kavProps}>
                 <View style={styles.wrap}>
                     <ScrollComponent ref={this._onRef}
                                      onFocus={this._onFocus}

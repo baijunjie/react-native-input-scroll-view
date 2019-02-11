@@ -5,6 +5,7 @@ export interface InputScrollViewProps extends ScrollViewProperties {
   readonly keyboardOffset?: number;
   readonly multilineInputStyle?: TextStyle;
   readonly useAnimatedScrollView?: boolean;
+  readonly keyboardAvoidingViewProps?: object;
 }
 
 declare class InputScrollView extends React.Component<InputScrollViewProps> {
