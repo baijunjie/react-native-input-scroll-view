@@ -65,6 +65,7 @@ if (isIOS) {
 
 export default class extends PureComponent {
     static propTypes = {
+        topOffset: PropTypes.number,
         keyboardOffset: PropTypes.number,
         multilineInputStyle: PropTypes.oneOfType([
             PropTypes.object,
@@ -93,8 +94,8 @@ export default class extends PureComponent {
         this._curFocus = null;
         this._measureCallback = null;
         this._keyboardShow = false;
-        this._topOffset = 0;
         this._inputInfoMap = {};
+        this._topOffset = this.props.topOffset;
 
         this._addListener();
         this._extendScrollViewFunc();
@@ -106,6 +107,7 @@ export default class extends PureComponent {
 
     render() {
         const {
+            topOffset,
             keyboardOffset,
             multilineInputStyle,
             useAnimatedScrollView,
@@ -265,12 +267,18 @@ export default class extends PureComponent {
             this._root = this._root._component;
         }
 
-        setTimeout(() => {
+        const getTopOffset = () => {
+            this.props.topOffset === undefined &&
             this._root._innerViewRef &&
             this._root._innerViewRef.measureInWindow((x, y) => {
                 this._topOffset = y;
             });
-        });
+        };
+
+        setTimeout(getTopOffset);
+        // 如果屏幕是带动画进入，那么初次获取的位置偏移量并不准确，需要等动画听指挥重新计算
+        // 这里暂定等待时间为 1000 毫秒
+        setTimeout(getTopOffset, 1000);
     };
 
     _scrollToKeyboardRequest = () => {
