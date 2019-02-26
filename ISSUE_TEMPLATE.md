@@ -1,1 +1,7 @@
-In order to solve your problem quickly, please use `https://snack.expo.io/` to make the smallest demo.
+<!--
+
+In order to solve your problem quickly,
+
+Please use `https://snack.expo.io/` to make the smallest demo.
+
+-->
