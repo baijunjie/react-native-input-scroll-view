@@ -17,7 +17,6 @@ import {
     Animated,
     UIManager,
 } from 'react-native';
-import cloneDeep from 'lodash/cloneDeep';
 
 const isIOS = Platform.OS === 'ios';
 
@@ -36,10 +35,10 @@ if (isIOS) {
             }
         };
         return function(event) {
-            const e = cloneDeep(event);
+            event.persist();
             cancelAnimationFrame(id);
             count = wait;
-            action.call(this, e);
+            action.call(this, event);
         };
     };
 } else {
@@ -55,10 +54,10 @@ if (isIOS) {
             }
         };
         return function(event) {
-            const e = cloneDeep(event);
+            event.persist();
             clearTimeout(id);
             count = wait;
-            action.call(this, e);
+            action.call(this, event);
         };
     };
 }
@@ -207,13 +206,13 @@ export default class extends PureComponent {
         };
 
         Component.props.onSelectionChange = event => {
-            const e = cloneDeep(event);
+            event.persist();
             if (isIOS) {
                 // 确保处理代码在 onChange 之后执行
                 // release 版本必须使用 requestAnimationFrame
-                requestAnimationFrame(() => this._onSelectionChange(e));
+                requestAnimationFrame(() => this._onSelectionChange(event));
             } else {
-                setTimeout(() => this._onSelectionChange(e));
+                setTimeout(() => this._onSelectionChange(event));
             }
             onSelectionChange &&
             onSelectionChange(event);
