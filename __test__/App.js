@@ -6,12 +6,17 @@
  * @flow
  */
 
-import React, {Component} from 'react';
+import React, { Component } from 'react';
 import {StyleSheet, TextInput, View, Text} from 'react-native';
 import InputScrollView from './react-native-input-scroll-view';
 
-type Props = {};
-export default class App extends Component<Props> {
+const MyComponent = props => (
+    <View>
+        <TextInput {...props} />
+    </View>
+)
+
+export default class App extends Component {
   state = {
     text: '',
     textarea: '',
@@ -24,7 +29,7 @@ export default class App extends Component<Props> {
         <InputScrollView>
           <View style={styles.placeholder} />
           <TextInput style={styles.input} value={text} />
-          <TextInput style={styles.textarea}
+          <MyComponent style={styles.textarea}
                      value={textarea}
                      onChangeText={text => this.setState({ textarea: text })}
                      multiline />
