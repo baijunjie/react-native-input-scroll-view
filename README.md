@@ -53,6 +53,34 @@ render() {
 }
 ```
 
+React-native-input-scroll-view automatically modify onContentSizeChange, onSelectionChange, and onChange `TextInput` props. It is not yet designed to pass them down if the `TextInput` is wrapped into another component so don’t forget to do it:
+```jsx
+import InputScrollView from 'react-native-input-scroll-view';
+...
+
+const MyComponent = props => (
+    <View>
+        <TextInput {...props} />
+    </View>
+);
+...
+
+state = {
+    text: '',
+};
+
+render() {
+    const { text } = this.state;
+    return (
+        <InputScrollView>
+            <MyComponent value={text}
+                         onChangeText={text => this.setState({ text })}
+                        />
+      	</InputScrollView>
+    );
+}
+```
+
 **Note that if the cursor is to be correctly adjusted to the top of the keyboard, you must bind `value` to `TextInput`.**
 
 
