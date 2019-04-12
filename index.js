@@ -454,9 +454,12 @@ function focus(targetTag) {
         // 在 react-native v0.57 版本中（也可能更早），UIManager.focus 不再有效
         TextInput.State && TextInput.State.focusTextInput(targetTag);
     } else {
+        const AndroidTextInput = UIManager.getViewManagerConfig 
+            && UIManager.getViewManagerConfig('AndroidTextInput')
+            || UIManager.AndroidTextInput;
         UIManager.dispatchViewManagerCommand(
             targetTag,
-            UIManager.AndroidTextInput.Commands.focusTextInput,
+            AndroidTextInput.Commands.focusTextInput,
             null,
         );
     }
