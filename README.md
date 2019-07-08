@@ -131,7 +131,7 @@ _onContentSizeChange = ({nativeEvent:event}) => {
 | `multilineInputStyle`   | `Style`  | `null`  | If your multiline `TextInput` has a specific style, to ensure that the cursor can be accurately adjusted to the top of the keyboard, this is set as a multiline `TextInput` style, The style attributes that mainly include `fontSize`、`fontFamily`、`lineHeight` etc. affect the position of the cursor. **Be careful not to include `width` and `height`**. |
 | `useAnimatedScrollView` | `bool`   | `false` | Replace regular `ScrollView` component with `Animated.ScrollView` component. |
 | `keyboardAvoidingViewProps` | `props` | `null` | `KeyboardAvoidingView` component Props. Check them here: https://facebook.github.io/react-native/docs/keyboardavoidingview |
-| `...ScrolView.props`    | `props`  |         | All props from ScrollView are inherited. Check them here: https://facebook.github.io/react-native/docs/scrollview.html |
+| `...ScrollView.props`    | `props`  |         | All props from ScrollView are inherited. Check them here: https://facebook.github.io/react-native/docs/scrollview.html |
 
 
 
@@ -144,7 +144,7 @@ _onContentSizeChange = ({nativeEvent:event}) => {
 
 
 
-## Produt case
+## Product case
 
 [![App_Store](https://github.com/baijunjie/react-native-input-scroll-view/blob/master/images/App_Store.png)](https://itunes.apple.com/us/app/id-butler-free/id1291749714?mt=8)
 
