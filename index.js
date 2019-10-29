@@ -88,7 +88,7 @@ export default class extends PureComponent {
         measureInputWidth: 0,
     };
 
-    componentWillMount() {
+    componentDidMount() {
         this._root = null;
         this._curFocus = null;
         this._measureCallback = null;
