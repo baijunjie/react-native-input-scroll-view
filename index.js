@@ -72,6 +72,7 @@ export default class extends PureComponent {
             PropTypes.number,
         ]),
         useAnimatedScrollView: PropTypes.bool,
+        supportHardwareKeyboard: PropTypes.bool,
         keyboardAvoidingViewProps: PropTypes.object
     };
 
@@ -110,6 +111,7 @@ export default class extends PureComponent {
             keyboardOffset,
             multilineInputStyle,
             useAnimatedScrollView,
+            supportHardwareKeyboard,
             keyboardAvoidingViewProps,
             children,
             ...otherProps
@@ -280,7 +282,7 @@ export default class extends PureComponent {
     };
 
     _scrollToKeyboardRequest = () => {
-        if (!this._keyboardShow) return;
+        if (!this._keyboardShow && !this.props.supportHardwareKeyboard) return;
 
         const curFocusTarget = this._curFocus;
         if (!curFocusTarget) return;
@@ -380,7 +382,7 @@ export default class extends PureComponent {
             inputInfo.onFocusRequireScroll = true;
             setTimeout(() => {
                 // 如果 onSelectionChange 没有触发，则在这里执行
-                if (this._keyboardShow && inputInfo.onFocusRequireScroll) {
+                if ((this._keyboardShow || this.props.supportHardwareKeyboard) && inputInfo.onFocusRequireScroll) {
                     inputInfo.onFocusRequireScroll = false;
                     this._scrollToKeyboardRequest();
                 }

@@ -126,12 +126,13 @@ _onContentSizeChange = ({nativeEvent:event}) => {
 
 | Property                | Type     | Default | Description                              |
 | ----------------------- | -------- | ------- | ---------------------------------------- |
-| `topOffset`        | `number` | `undefined` | The offset of the `InputScrollView` relative to the top of the window. When the screen contains `TopBar`, it is usually set to the height of `TopBar`. If not explicitly set, the program will automatically determine, but may cause problems [issues#43](https://github.com/baijunjie/react-native-input-scroll-view/issues/43)。 |
+| `topOffset`        | `number` | `undefined` | The offset of the `InputScrollView` relative to the top of the window. When the screen contains `TopBar`, it is usually set to the height of `TopBar`. If not explicitly set, the program will automatically determine, but may cause problems. [issues#43](https://github.com/baijunjie/react-native-input-scroll-view/issues/43)。 |
 | `keyboardOffset`        | `number` | `40`    | When automatic adjustment, the cursor relative to the top of the keyboard offset. |
 | `multilineInputStyle`   | `Style`  | `null`  | If your multiline `TextInput` has a specific style, to ensure that the cursor can be accurately adjusted to the top of the keyboard, this is set as a multiline `TextInput` style, The style attributes that mainly include `fontSize`、`fontFamily`、`lineHeight` etc. affect the position of the cursor. **Be careful not to include `width` and `height`**. |
 | `useAnimatedScrollView` | `bool`   | `false` | Replace regular `ScrollView` component with `Animated.ScrollView` component. |
-| `keyboardAvoidingViewProps` | `props` | `null` | `KeyboardAvoidingView` component Props. Check them here: https://facebook.github.io/react-native/docs/keyboardavoidingview |
-| `...ScrollView.props`    | `props`  |         | All props from ScrollView are inherited. Check them here: https://facebook.github.io/react-native/docs/scrollview.html |
+| `supportHardwareKeyboard`   | `bool`   | `false` | `beta` If your device does not use a soft keyboard, try using this parameter to solve the problem. [issues#69](https://github.com/baijunjie/react-native-input-scroll-view/issues/69) |
+| `keyboardAvoidingViewProps` | `props`  | `null` | `KeyboardAvoidingView` component Props. Check them here: https://facebook.github.io/react-native/docs/keyboardavoidingview |
+| `...ScrollView.props` | `props` | | All props from ScrollView are inherited. Check them here: https://facebook.github.io/react-native/docs/scrollview.html |
 
 
 

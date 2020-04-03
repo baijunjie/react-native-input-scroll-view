@@ -6,6 +6,7 @@ export interface InputScrollViewProps extends ScrollViewProperties {
   readonly keyboardOffset?: number;
   readonly multilineInputStyle?: TextStyle;
   readonly useAnimatedScrollView?: boolean;
+  readonly supportHardwareKeyboard?: boolean;
   readonly keyboardAvoidingViewProps?: object;
 }
 
