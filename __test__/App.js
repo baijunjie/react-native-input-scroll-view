@@ -11,9 +11,9 @@ import {StyleSheet, TextInput, View, Text} from 'react-native';
 import InputScrollView from './react-native-input-scroll-view';
 
 const MyComponent = props => (
-    <View>
-        <TextInput {...props} />
-    </View>
+  <View>
+    <TextInput {...props} />
+  </View>
 )
 
 export default class App extends Component {
@@ -28,11 +28,15 @@ export default class App extends Component {
       <View style={styles.container}>
         <InputScrollView>
           <View style={styles.placeholder} />
-          <TextInput style={styles.input} value={text} />
+          <TextInput style={styles.input}
+                     value={text}
+                     onChangeText={text => this.setState({ text })}
+          />
           <MyComponent style={styles.textarea}
-                     value={textarea}
-                     onChangeText={text => this.setState({ textarea: text })}
-                     multiline />
+                       value={textarea}
+                       onChangeText={text => this.setState({ textarea: text })}
+                       multiline
+          />
         </InputScrollView>
       </View>
     );
