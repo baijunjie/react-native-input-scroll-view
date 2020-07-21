@@ -77,6 +77,7 @@ export default class extends PureComponent {
   };
 
   static defaultProps = {
+    topOffset: 0,
     keyboardOffset: 40,
     multilineInputStyle: null,
     useAnimatedScrollView: false,
@@ -136,7 +137,9 @@ export default class extends PureComponent {
         <View style={styles.wrap}>
           <ScrollComponent ref={this._onRef}
                            onFocus={this._onFocus}
-                           onBlur={this._onBlur} {...otherProps}>
+                           onBlur={this._onBlur} {...otherProps}
+                           // fix missing TextInput missing focus
+                           keyboardShouldPersistTaps='handled'>
             <View onStartShouldSetResponderCapture={isIOS ? this._onTouchStart : null}>
               {newChildren}
               <View style={styles.hidden}
@@ -323,7 +326,7 @@ export default class extends PureComponent {
 
   _scrollToKeyboard = (target, offset) => {
     const toKeyboardOffset = this._topOffset + this.props.keyboardOffset - offset;
-    this._root.scrollResponderScrollNativeHandleToKeyboard(target, toKeyboardOffset, true);
+    this._root.scrollResponderScrollNativeHandleToKeyboard(target, toKeyboardOffset, false); // false to support multiline scroll when a new is entered
   };
 
   _onKeyboardShow = () => {
@@ -368,7 +371,8 @@ export default class extends PureComponent {
     // 原因可能是系统并未判定 TextInput 获取焦点，这可能是一个 bug
     // 通常需要在 onStartShouldSetResponderCapture 返回 false 的情况下再点击一次 TextInput 才能恢复正常
     // 所以这里手动再设置一次焦点
-    focus(target);
+    // added keyboardShouldPersistTaps='handled' to scroll root instead - shoud fix this issue
+    // focus(target);
 
     const inputInfo = this._getInputInfo(target);
     const multiline = getProps(event._targetInst).multiline;
@@ -469,7 +473,8 @@ function focus(targetTag) {
 }
 
 function getTarget(event) {
-  return event.target ||
+  return event.nativeEvent.target || // on >= 0.63 target tag can be found on nativeEvent not sure in other versions
+    event.target ||
     event.currentTarget ||
     event._targetInst.stateNode._nativeTag; // for Android
 }
